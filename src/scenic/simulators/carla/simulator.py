@@ -158,6 +158,16 @@ class CarlaSimulation(DrivingSimulation):
 
         self.world.tick()  ## allowing manualgearshift to take effect    # TODO still need this?
 
+
+        # Set up ego camera manager
+        self.ego_pov = visuals.CameraManager(self.world, egoActor, self.hud)
+        self.ego_pov.set_sensor(0)
+        self.ego_pov.set_transform(1)
+        
+        self.world.tick()
+
+
+
         for obj in self.objects:
             if isinstance(obj.carlaActor, carla.Vehicle):
                 obj.carlaActor.apply_control(
@@ -246,16 +256,30 @@ class CarlaSimulation(DrivingSimulation):
                 )
             obj.carlaController = controller
         return carlaActor
+    
+    
+
+        
 
     def executeActions(self, allActions):
         super().executeActions(allActions)
 
         # Apply control updates which were accumulated while executing the actions
+
         for obj in self.agents:
             ctrl = obj._control
             if ctrl is not None:
                 obj.carlaActor.apply_control(ctrl)
                 obj._control = None
+
+            
+    def getEgoImage(self):        
+        return self.ego_pov.images[-1]
+    
+    def setEgoControl(self, ctrl):
+        self.agents[0].carlaActor.apply_control(ctrl)
+        self.agents[0]._control = None
+
 
     def step(self):
         # Run simulation for one timestep
@@ -309,8 +333,10 @@ class CarlaSimulation(DrivingSimulation):
                 obj.carlaActor.destroy()
         if self.render and self.cameraManager:
             self.cameraManager.destroy_sensor()
-
+            
+        self.ego_pov.destroy_sensor()
+        
         self.client.stop_recorder()
-
+        
         self.world.tick()
         super().destroy()
