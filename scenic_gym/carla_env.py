@@ -1,7 +1,6 @@
 import gymnasium as gym
 import random
-from scenic.simulators import CarlaSimulator
-from scenic.syntax.veneer import localPath
+
 import scenic
 import carla
 import random
@@ -17,10 +16,10 @@ class CarlaEnv(gym.Env):
         timestep=0.1,
         traffic_manager_port=None,
     ):
-
-        
+        self.timestep = timestep
+        self.simulation = None
         self.scene = scene
-        self.simulator = CarlaSimulator(carla_map,
+        self.simulator = scenic.simulators.carla.simulator.CarlaSimulator(carla_map,
         map_path,
         address,
         port,
@@ -46,16 +45,12 @@ class CarlaEnv(gym.Env):
         
         
 
-    def reset(self, seed=None):
+    def reset(self):
         
-        try:        
-            self.simulation, _ = self.simulator.createSimulation(scene = self.scene, timestep = self.timestep)
-            
-        except Exception as e:
-            print(e)
-            #print("Retrying...")
-            pass        
-    
+      
+        self.simulation, _ = self.simulator.createSimulation(scene = self.scene, timestep = self.timestep)
+        print("simulation created")
+      
     
     
 
@@ -78,13 +73,17 @@ def random_vehicle_control():
         
         
 def main():
-    map_path = localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
+    map_path = scenic.syntax.veneer.localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
     carla_map = 'Town01'
-    scenario = scenic.scenarioFromFile("test.scenic")
-    
-    env = CarlaEnv(scenario = scenario, carla_map = carla_map, map_path = map_path)
+    scenario = scenic.scenarioFromFile("test.scenic", mode2D = True)
+    random.seed(0)
+    scene, _ =  scenario.generate()
+    print(scene)
+
+    env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path)
     
     env.reset()
+    print("reset the environment")
     for i in range(100):
 
         control = random_vehicle_control()
@@ -93,4 +92,4 @@ def main():
     env.close()
     
 
-    
+main()
