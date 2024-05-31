@@ -46,9 +46,8 @@ class CarlaEnv(gym.Env):
         
 
     def reset(self):
-        
-      
-        self.simulation, _ = self.simulator.createSimulation(scene = self.scene, timestep = self.timestep)
+        self.simulation, _ = self.simulator.createSimulation(scene = self.scene, timestep = self.timestep, name="test")
+        self.simulation.initialize_simulation()
         print("simulation created")
       
     

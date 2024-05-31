@@ -317,7 +317,7 @@ class Simulation(abc.ABC):
         self,
         scene,
         *,
-        maxSteps,
+        maxSteps=100,
         name,
         timestep,
         replay=None,
@@ -343,10 +343,11 @@ class Simulation(abc.ABC):
         self.actionSequence = []
 
         # Prepare to save or load a replay.
-        self.initializeReplay(replay, enableReplay, enableDivergenceCheck, allowPickle)
-        self.divergenceTolerance = divergenceTolerance
-        self.continueAfterDivergence = continueAfterDivergence
+        #self.initializeReplay(replay, enableReplay, enableDivergenceCheck, allowPickle)
+        #self.divergenceTolerance = divergenceTolerance
+        #self.continueAfterDivergence = continueAfterDivergence
 
+    def initalize_simulation(self):
         # Do the actual setup and execution of the simulation inside a try-finally
         # statement so that we roll back global state even if an error occurs.
         try:
@@ -367,6 +368,13 @@ class Simulation(abc.ABC):
             self.updateObjects()
 
             # Run the simulation.
+        except:
+            print("Error in initializing simulation")
+            self.destroy()
+            
+            
+            '''
+            
             terminationType, terminationReason = self._run(dynamicScenario, maxSteps)
 
             # Stop all remaining scenarios.
@@ -406,7 +414,49 @@ class Simulation(abc.ABC):
             for scenario in tuple(reversed(veneer.runningScenarios)):
                 scenario._stop("exception", quiet=True)
             veneer.endSimulation(self)
+            
+            
+            '''
+    def run_one_step(self):
+        self.recordCurrentState()
+        # Compute the actions of the agents in this time step
+        allActions = OrderedDict()
+        schedule = self.scheduleForAgents()
+        for agent in schedule:
+            # Run the agent's behavior to get its actions
+            actions = agent.behavior._step()
 
+
+            # Check ordinary actions for compatibility
+            assert isinstance(actions, tuple)
+            if len(actions) == 1 and isinstance(actions[0], (list, tuple)):
+                actions = tuple(actions[0])
+            if not self.actionsAreCompatible(agent, actions):
+                raise InvalidScenarioError(
+                    f"agent {agent} tried incompatible action(s) {actions}"
+                )
+
+            # Save actions for execution below
+            allActions[agent] = actions
+
+        # Execute the actions
+        if self.verbosity >= 3:
+            for agent, actions in allActions.items():
+                print(f"      Agent {agent} takes action(s) {actions}")
+                agent.lastActions = actions
+        self.actionSequence.append(allActions)
+        self.executeActions(allActions)
+
+        # Run the simulation for a single step and read its state back into Scenic
+        self.step()
+        self.currentTime += 1
+        self.updateObjects()
+            
+            
+            
+            
+            
+            
     def _run(self, dynamicScenario, maxSteps):
         assert self.currentTime == 0
 
