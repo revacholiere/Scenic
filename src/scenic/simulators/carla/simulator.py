@@ -111,8 +111,14 @@ class CarlaSimulation(DrivingSimulation):
         self.record = record
         self.scenario_number = scenario_number
         self.cameraManager = None
+        self.ego_pov = None
+
 
         super().__init__(scene, **kwargs)
+
+
+
+
 
     def setup(self):
         weather = self.scene.params.get("weather")
@@ -265,11 +271,13 @@ class CarlaSimulation(DrivingSimulation):
         super().executeActions(allActions)
 
         # Apply control updates which were accumulated while executing the actions
+        
 
         for obj in self.agents:
             ctrl = obj._control
             if ctrl is not None:
                 obj.carlaActor.apply_control(ctrl)
+                
                 obj._control = None
 
             
@@ -277,8 +285,7 @@ class CarlaSimulation(DrivingSimulation):
         return self.ego_pov.images[-1]
     
     def setEgoControl(self, ctrl):
-        self.agents[0].carlaActor.apply_control(ctrl)
-        self.agents[0]._control = None
+        self.objects[0].carlaActor.apply_control(ctrl)
 
 
     def step(self):

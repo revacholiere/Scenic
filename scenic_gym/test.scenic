@@ -8,4 +8,4 @@ model scenic.simulators.carla.model
 
 
 ego = new Car
-car = new Car visible from ego, with behavior AutopilotBehavior()
+car = new Car visible from ego, with behavior FollowLaneBehavior()

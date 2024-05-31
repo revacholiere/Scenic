@@ -39,17 +39,15 @@ class CarlaEnv(gym.Env):
         
         
         self.simulation.setEgoControl(ctrl)
-        self.simulation.step()
+        self.simulation.run_one_step()
 
         
         
         
 
     def reset(self):
-        self.simulation, _ = self.simulator.createSimulation(scene = self.scene, timestep = self.timestep, name="test")
-        self.simulation.initialize_simulation()
-        print("simulation created")
-      
+        self.simulation = self.simulator.simulate(scene = self.scene, timestep = self.timestep)
+ 
     
     
 
@@ -62,11 +60,11 @@ class CarlaEnv(gym.Env):
 
 def random_vehicle_control():
     control = carla.VehicleControl()
-    control.throttle = random.uniform(0, 1)  # random throttle between 0 and 1
-    control.steer = random.uniform(-1, 1)  # random steering angle between -1 and 1
-    control.brake = random.uniform(0, 1)  # random brake between 0 and 1
-    control.hand_brake = random.choice([False, True])  # random hand brake status
-    control.reverse = random.choice([False, True])  # random reverse status
+    control.throttle = 1  # random throttle between 0 and 1
+    control.steer = 0  # random steering angle between -1 and 1
+    control.brake = 0  # random brake between 0 and 1
+    control.hand_brake = False  # random hand brake status
+    control.reverse = 0  # random reverse status
     return control
         
         
@@ -75,18 +73,20 @@ def main():
     map_path = scenic.syntax.veneer.localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
     carla_map = 'Town01'
     scenario = scenic.scenarioFromFile("test.scenic", mode2D = True)
-    random.seed(0)
+    random.seed(2)
     scene, _ =  scenario.generate()
-    print(scene)
+    
 
     env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path)
     
     env.reset()
     print("reset the environment")
-    for i in range(100):
-
+    for i in range(1000):
+        
+        print(i)
         control = random_vehicle_control()
         env.step(control)
+        print('after')
 
     env.close()
     

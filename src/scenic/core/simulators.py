@@ -342,12 +342,17 @@ class Simulation(abc.ABC):
 
         self.actionSequence = []
 
-        # Prepare to save or load a replay.
-        #self.initializeReplay(replay, enableReplay, enableDivergenceCheck, allowPickle)
-        #self.divergenceTolerance = divergenceTolerance
-        #self.continueAfterDivergence = continueAfterDivergence
 
-    def initalize_simulation(self):
+        
+        # Prepare to save or load a replay.
+        self.initializeReplay(replay, enableReplay, enableDivergenceCheck, allowPickle)
+        self.divergenceTolerance = divergenceTolerance
+        self.continueAfterDivergence = continueAfterDivergence
+
+
+        
+        self.initialize_simulation()
+    def initialize_simulation(self):
         # Do the actual setup and execution of the simulation inside a try-finally
         # statement so that we roll back global state even if an error occurs.
         try:
@@ -366,10 +371,11 @@ class Simulation(abc.ABC):
             # Update all objects in case the simulator has adjusted any dynamic
             # properties during setup.
             self.updateObjects()
-
+            print("Initialized simulation")
             # Run the simulation.
-        except:
-            print("Error in initializing simulation")
+        except Exception as e:
+            print(e)
+            print("Could not initialize")
             self.destroy()
             
             
