@@ -157,6 +157,7 @@ class CarlaSimulation(DrivingSimulation):
             camIndex = 0
             camPosIndex = 0
             egoActor = self.objects[0].carlaActor
+            self.ego = egoActor
             self.cameraManager = visuals.CameraManager(self.world, egoActor, self.hud)
             self.cameraManager._transform_index = camPosIndex
             self.cameraManager.set_sensor(camIndex)
@@ -166,6 +167,8 @@ class CarlaSimulation(DrivingSimulation):
 
 
         # Set up ego camera manager
+
+
         self.ego_pov = visuals.CameraManager(self.world, egoActor, self.hud)
         self.ego_pov.set_sensor(0)
         self.ego_pov.set_transform(1)

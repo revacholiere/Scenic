@@ -73,7 +73,7 @@ def main():
     map_path = scenic.syntax.veneer.localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
     carla_map = 'Town01'
     scenario = scenic.scenarioFromFile("test.scenic", mode2D = True)
-    random.seed(2)
+    random.seed(2500)
     scene, _ =  scenario.generate()
     
 
@@ -81,12 +81,16 @@ def main():
     
     env.reset()
     print("reset the environment")
-    for i in range(1000):
+    for i in range(100):
         
-        print(i)
+
+        if i % 20 == 0:
+            image = env.simulation.ego_pov.images[-1]
+            image.save_to_disk('images/%.6d.jpg' % image.frame)
+        
         control = random_vehicle_control()
         env.step(control)
-        print('after')
+    
 
     env.close()
     

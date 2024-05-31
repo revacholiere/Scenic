@@ -350,7 +350,7 @@ class Simulation(abc.ABC):
         self.continueAfterDivergence = continueAfterDivergence
 
 
-        
+
         self.initialize_simulation()
     def initialize_simulation(self):
         # Do the actual setup and execution of the simulation inside a try-finally

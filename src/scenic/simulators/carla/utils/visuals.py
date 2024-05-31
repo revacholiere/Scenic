@@ -341,7 +341,7 @@ class CameraManager(object):
             display.blit(self._surface, (0, 0))
 
     @staticmethod
-    def _parse_image(weak_self, image):
+    def _parse_image(weak_self, image, save = False):
         self = weak_self()
         if not self:
             return
@@ -365,6 +365,8 @@ class CameraManager(object):
             array = array[:, :, :3]
             array = array[:, :, ::-1]
             self._surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+
+            
         self.images.append(image)
 
     def destroy_sensor(self):
