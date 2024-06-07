@@ -174,7 +174,7 @@ def main(): # Test the environment
     map_path = scenic.syntax.veneer.localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
     carla_map = 'Town01'
     scenario = scenic.scenarioFromFile("test.scenic", mode2D = True)
-    random.seed(2500)
+    random.seed(2)
     scene, _ =  scenario.generate()
     
 
@@ -183,8 +183,8 @@ def main(): # Test the environment
     obs = env.reset()
     obs.save_to_disk('images/%.6d.jpg' % obs.frame)
     print("reset the environment")
-    for i in range(100):
-        
+    for i in range(600):
+        print(i)
         obs, _, __, ___ = env.step()
         obs.save_to_disk('images/%.6d.jpg' % obs.frame)
         
