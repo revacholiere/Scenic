@@ -1,9 +1,14 @@
 import gymnasium as gym
 import random
-
+import numpy as np
 import scenic
 import carla
 import random
+
+
+WIDTH = 1280
+HEIGHT = 720
+
 
 class CarlaEnv(gym.Env):
     def __init__(self, scene, carla_map,
@@ -16,6 +21,8 @@ class CarlaEnv(gym.Env):
         timestep=0.1,
         traffic_manager_port=None,
     ):
+        
+
         self.timestep = timestep
         self.simulation = None
         self.scene = scene
@@ -47,6 +54,7 @@ class CarlaEnv(gym.Env):
 
     def reset(self):
         self.simulation = self.simulator.simulate(scene = self.scene, timestep = self.timestep)
+        obs = self.simulation.ego_pov.images[-1]
  
     
     
@@ -69,7 +77,10 @@ def random_vehicle_control():
         
         
         
-def main():
+def main(): # Test the environment
+    
+    
+    
     map_path = scenic.syntax.veneer.localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
     carla_map = 'Town01'
     scenario = scenic.scenarioFromFile("test.scenic", mode2D = True)
@@ -79,9 +90,10 @@ def main():
 
     env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path)
     
-    env.reset()
+    obs = env.reset()
+    obs.save_to_disk('images/%.6d.jpg' % obs.frame)
     print("reset the environment")
-    for i in range(100):
+    for i in range(0):
         
 
         if i % 20 == 0:
@@ -93,6 +105,8 @@ def main():
     
 
     env.close()
-    
+
+
+
 
 main()
