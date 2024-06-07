@@ -12,8 +12,8 @@ from collections import deque
 from enum import IntEnum
 
 import carla
-from agents.navigation.controller import VehiclePIDController
-from agents.tools.misc import get_speed
+from agent.navigation.controller import VehiclePIDController
+from agent.tools.misc import get_speed
 
 logger = logging.getLogger(__name__)
 
