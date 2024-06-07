@@ -15,11 +15,11 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Example values
 ])
 
-def image_to_array(self, image):
+def image_to_array(image):
     array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8")).reshape(image.height, image.width, 4)
     array = array[:, :, :3] #BGR
     array = array[:, :, ::-1] #RGB
-    self.latest_rgb_array = array
+    return array
 
 
 
