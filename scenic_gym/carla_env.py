@@ -185,10 +185,10 @@ def main(): # Test the environment
     print("reset the environment")
     for i in range(100):
         
-
+        obs = env.step()
         obs.save_to_disk('images/%.6d.jpg' % obs.frame)
         
-        obs = env.step()
+        
     
 
     env.close()
