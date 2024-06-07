@@ -108,7 +108,6 @@ class CarlaEnv(gym.Env):
         
         self.obj_list = create_obj_list(self.simulation, pred_np.boxes, depth_array) if len(pred[0].boxes) > 0 else []
         #print(dir(pred))
-        self.obj_list = create_obj_list(self.simulation, pred_np.boxes, depth_image) if len(pred[0].boxes) > 0 else []
         self.agent.update_object_information(self.obj_list)
         
         
