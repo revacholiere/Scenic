@@ -167,26 +167,26 @@ def random_vehicle_control():
         
         
         
-def main(): # Test the environment
+def main(seed): # Test the environment
     
     
     
     map_path = scenic.syntax.veneer.localPath('~/Scenic/assets/maps/CARLA/Town01.xodr')
     carla_map = 'Town01'
     scenario = scenic.scenarioFromFile("test.scenic", mode2D = True)
-    random.seed(2)
+    random.seed(seed)
     scene, _ =  scenario.generate()
     
 
     env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path, render = True)
     
     obs = env.reset()
-    obs.save_to_disk('images/%.6d.jpg' % obs.frame)
+
     print("reset the environment")
     for i in range(600):
-        print(i)
+        #print(i)
         obs, _, __, ___ = env.step()
-        obs.save_to_disk('images/%.6d.jpg' % obs.frame)
+        obs.save_to_disk('autopilotvideo%d/%d_%.6d.jpg' % (seed, seed, obs.frame))
         
         
     
@@ -195,4 +195,5 @@ def main(): # Test the environment
 
 
 
-main()
+main(3)
+

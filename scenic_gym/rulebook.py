@@ -142,7 +142,7 @@ class RuleBook(object):
         actor_list = self._world.get_actors().filter(rule.actor)
         
         for actor in actor_list:
-            print(self._vehicle.id)
+
             if actor.id == self._vehicle.id:
                 continue
             if self._detect_collision(actor) and self._is_infront(actor):

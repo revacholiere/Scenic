@@ -300,7 +300,8 @@ class CarlaSimulation(DrivingSimulation):
         return self.ego_pov.images[-1]
     
     def setEgoControl(self, ctrl):
-        self.objects[0].carlaActor.apply_control(ctrl)
+        if not self.objects[0].behavior:
+            self.ego.apply_control(ctrl)
 
 
     def step(self):
