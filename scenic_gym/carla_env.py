@@ -22,7 +22,8 @@ class CarlaEnv(gym.Env):
         traffic_manager_port=None,
     ):
         
-
+        #self.observation_space = gym.spaces.Box(low=0, high=255, shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
+        #self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.timestep = timestep
         self.simulation = None
         self.scene = scene
@@ -41,20 +42,23 @@ class CarlaEnv(gym.Env):
     
 
     def step(self, ctrl): # TODO: Add reward, observation, agent info
-        
+        info = {}
+        done = False
+        reward = 0
 
         
         
         self.simulation.setEgoControl(ctrl)
         self.simulation.run_one_step()
 
+        obs = self.simulation.getEgoImage()
         
         
-        
+        return obs, reward, done, info
 
     def reset(self):
         self.simulation = self.simulator.simulate(scene = self.scene, timestep = self.timestep)
-        obs = self.simulation.ego_pov.images[-1]
+        obs = self.simulation.getEgoImage()
  
     
     
@@ -97,11 +101,10 @@ def main(): # Test the environment
         
 
         if i % 20 == 0:
-            image = env.simulation.ego_pov.images[-1]
-            image.save_to_disk('images/%.6d.jpg' % image.frame)
+            obs.save_to_disk('images/%.6d.jpg' % obs.frame)
         
         control = random_vehicle_control()
-        env.step(control)
+        obs = env.step(control)
     
 
     env.close()
@@ -109,4 +112,3 @@ def main(): # Test the environment
 
 
 
-main()
