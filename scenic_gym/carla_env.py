@@ -106,7 +106,7 @@ class CarlaEnv(gym.Env):
 
         obs = self.simulation.getEgoImage()
         #convert obs to numpy array
-        obs = transform(obs)
+
 
         
         self.agent = BehaviorAgent(self.simulation.ego, behavior='normal')
