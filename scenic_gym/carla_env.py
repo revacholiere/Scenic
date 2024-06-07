@@ -1,4 +1,4 @@
-from agents.navigation.behavior_agent import BehaviorAgent
+
 
 import gymnasium as gym
 import random
@@ -12,6 +12,8 @@ from object_info import create_obj_list
 
 from torchvision import transforms
 from ultralytics import YOLO
+
+from agent.navigation.behavior_agent import BehaviorAgent
 
 transform = transforms.Compose([
     transforms.ToTensor(),
