@@ -23,6 +23,17 @@ def image_to_array(image):
 
 
 
+def image_to_grayscale_depth_array(image):
+    array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8")).reshape(image.height, image.width, 4)
+    array = array.astype(np.float32)
+    array = array[:, :, :3] #BGR
+    
+    B, G, R = array[:, :, 0], array[:, :, 1], array[:, :, 2]
+
+    # Apply the formula to normalize the depth values
+    grayscale = ((R + G * 256 + B * 65536) / (16777215)) * 1000
+
+    return np.repeat(grayscale[:, :, np.newaxis], 3, axis=2)
 
 
 WIDTH = 1280
@@ -83,6 +94,7 @@ class CarlaEnv(gym.Env):
         obs = self.simulation.getEgoImage()
         obs_array = image_to_array(obs)
         depth_image = self.simulation.getDepthImage()
+        depth_array = image_to_grayscale_depth_array(depth_image)
     
         # Get object detection
     
@@ -91,7 +103,7 @@ class CarlaEnv(gym.Env):
         
         # Update object list
         
-        self.obj_list = create_obj_list(self.simulation, pred_np.boxes, depth_image) if len(pred[0].boxes) > 0 else []
+        self.obj_list = create_obj_list(self.simulation, pred_np.boxes, depth_array) if len(pred[0].boxes) > 0 else []
         self.agent.update_object_information(self.obj_list)
         
         

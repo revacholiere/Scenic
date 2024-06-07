@@ -177,7 +177,7 @@ class CarlaSimulation(DrivingSimulation):
         # Set up depth camera
         
         self.depth_camera = visuals.CameraManager(self.world, self.ego, self.hud)
-        self.depth_camera.set_sensor(2)
+        self.depth_camera.set_sensor(1)
         self.depth_camera.set_transform(1)
         
         
