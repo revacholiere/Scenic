@@ -72,11 +72,12 @@ class CarlaEnv(gym.Env):
         
         
         obs = self.simulation.getEgoImage()
+        obs_array = np.array(obs)
         depth_image = self.simulation.getDepthImage()
     
         # Get object detection
     
-        pred = self.model(transform(obs))
+        pred = self.model(obs_array)
         pred_np = pred.cpu().numpy()
         
         # Update object list
