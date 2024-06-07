@@ -131,7 +131,7 @@ def main(): # Test the environment
     scene, _ =  scenario.generate()
     
 
-    env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path)
+    env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path, render = False)
     
     obs = env.reset()
     obs.save_to_disk('images/%.6d.jpg' % obs.frame)
