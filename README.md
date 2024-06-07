@@ -1,3 +1,12 @@
+A fork of Scenic that specializes on training ML models, with the help of Gymnasium.
+
+
+
+
+
+
+
+
 # Scenic
 
 [![Documentation Status](https://readthedocs.org/projects/scenic-lang/badge/?version=latest)](https://scenic-lang.readthedocs.io/en/latest/?badge=latest)
