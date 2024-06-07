@@ -77,7 +77,7 @@ class CarlaEnv(gym.Env):
         self.agent = None
         self.rulebook = None
         self.model = None
-    
+        self.obj_list = []
     
 
     def step(self, ctrl = None): # TODO: Add reward, observation, agent info
@@ -143,6 +143,8 @@ class CarlaEnv(gym.Env):
         self.rulebook = RuleBook(self.simulation.ego)
         #self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
         self.model = YOLO('./yolov5s.pt')
+        self.agent.update_object_information(self.obj_list)
+        
         return obs
     
     
