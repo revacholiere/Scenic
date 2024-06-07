@@ -34,6 +34,9 @@ from scenic.core.serialization import Serializer
 from scenic.core.vectors import Vector
 
 
+
+
+
 class SimulatorInterfaceWarning(UserWarning):
     """Warning indicating an issue with the interface to an external simulator."""
 
