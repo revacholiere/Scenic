@@ -1,9 +1,9 @@
 import logging
 
 import carla
-from global_route_planner import GlobalRoutePlanner
-from local_planner import LocalPlanner
-from local_planner import RoadOption
+from agent.navigation.global_route_planner import GlobalRoutePlanner
+from agent.navigation.local_planner import LocalPlanner
+from agent.navigation.local_planner import RoadOption
 from agent.tools.misc import compute_distance
 from agent.tools.misc import get_speed
 from agent.tools.misc import get_trafficlight_trigger_location
