@@ -9,6 +9,7 @@ from agents.navigation.behavior_agent import BehaviorAgent
 from object_info import create_obj_list
 import torch
 from torchvision import transforms
+from ultralytics import YOLO
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -86,11 +87,13 @@ class CarlaEnv(gym.Env):
     
         # Get object detection
     
-        pred = self.model(obs_array)
-        pred_np = pred.cpu().numpy()
+        pred = self.model(obs_array, verbose=False, classes = [1, 2, 3, 5, 7], conf=.7)
+        pred_np = pred[0].cpu().numpy()
+
+        #print(pred)
         
         # Update object list
-        
+        #print(dir(pred))
         self.obj_list = create_obj_list(self.simulation, pred_np.boxes, depth_image) if len(pred[0].boxes) > 0 else []
         self.agent.update_object_information(self.obj_list)
         
@@ -121,7 +124,8 @@ class CarlaEnv(gym.Env):
         
         self.agent = BehaviorAgent(self.simulation.ego, behavior='normal')
         self.rulebook = RuleBook(self.simulation.ego)
-        self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+        #self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+        self.model = YOLO('./yolov5s.pt')
         return obs
     
     
