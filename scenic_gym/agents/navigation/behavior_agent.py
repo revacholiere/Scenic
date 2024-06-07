@@ -80,8 +80,12 @@ class BehaviorAgent(BasicAgent):
         elif behavior == "aggressive":
             self._behavior = Aggressive()
 
+
+
     def update_object_information(self, objects):
         self._objects = objects
+
+
 
     def _update_information(self):
         """

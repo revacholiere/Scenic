@@ -1,3 +1,5 @@
+from agents.navigation.behavior_agent import BehaviorAgent
+
 import gymnasium as gym
 import random
 import numpy as np
@@ -5,9 +7,9 @@ import scenic
 import carla
 import random
 from rulebook import RuleBook
-from agents.navigation.behavior_agent import BehaviorAgent
+
 from object_info import create_obj_list
-import torch
+
 from torchvision import transforms
 from ultralytics import YOLO
 
