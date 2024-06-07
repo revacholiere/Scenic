@@ -99,6 +99,7 @@ class CarlaEnv(gym.Env):
         self.agent = BehaviorAgent(self.simulation.ego, behavior='normal')
         self.rulebook = RuleBook(self.simulation.ego)
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
+        return obs
     
     
 
