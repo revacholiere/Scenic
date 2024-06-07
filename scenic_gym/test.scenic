@@ -9,3 +9,5 @@ model scenic.simulators.carla.model
 
 ego = new Car
 car = new Car visible from ego, with behavior FollowLaneBehavior()
+car2 = new Car visible from ego, with behavior AutoPilotBehavior()
+car3 = new Car visible from ego, with behavior AutoPilotBehavior()

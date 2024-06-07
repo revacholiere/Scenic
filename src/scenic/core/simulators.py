@@ -460,6 +460,7 @@ class Simulation(abc.ABC):
         self.step()
         self.currentTime += 1
         self.updateObjects()
+
             
             
             

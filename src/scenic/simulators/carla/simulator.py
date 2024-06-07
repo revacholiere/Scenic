@@ -157,7 +157,7 @@ class CarlaSimulation(DrivingSimulation):
             camIndex = 0
             camPosIndex = 0
             egoActor = self.objects[0].carlaActor
-            self.ego = egoActor
+            
             self.cameraManager = visuals.CameraManager(self.world, egoActor, self.hud)
             self.cameraManager._transform_index = camPosIndex
             self.cameraManager.set_sensor(camIndex)
@@ -168,10 +168,18 @@ class CarlaSimulation(DrivingSimulation):
 
         # Set up ego camera manager
 
-
-        self.ego_pov = visuals.CameraManager(self.world, egoActor, self.hud)
+        self.ego = self.objects[0].carlaActor
+        self.ego_pov = visuals.CameraManager(self.world, self.ego, self.hud)
         self.ego_pov.set_sensor(0)
         self.ego_pov.set_transform(1)
+        
+        self.world.tick()
+        # Set up depth camera
+        
+        self.depth_camera = visuals.CameraManager(self.world, self.ego, self.hud)
+        self.depth_camera.set_sensor(2)
+        self.depth_camera.set_transform(1)
+        
         
         self.world.tick()
 
@@ -283,6 +291,10 @@ class CarlaSimulation(DrivingSimulation):
                 
                 obj._control = None
 
+
+
+    def getDepthImage(self):
+        return self.depth_camera.images[-1]
             
     def getEgoImage(self):        
         return self.ego_pov.images[-1]
@@ -345,6 +357,8 @@ class CarlaSimulation(DrivingSimulation):
             self.cameraManager.destroy_sensor()
             
         self.ego_pov.destroy_sensor()
+        
+        self.depth_camera.destroy_sensor()
         
         self.client.stop_recorder()
         

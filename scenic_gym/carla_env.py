@@ -4,7 +4,10 @@ import numpy as np
 import scenic
 import carla
 import random
-
+from rulebook import RuleBook
+from agents.navigation.behavior_agent import BehaviorAgent
+from object_info import create_obj_list
+import torch
 
 WIDTH = 1280
 HEIGHT = 720
@@ -37,29 +40,65 @@ class CarlaEnv(gym.Env):
         timestep,
         traffic_manager_port)
         
-        
+
+
+        self.agent = None
+        self.rulebook = None
+        self.model = None
     
     
 
-    def step(self, ctrl): # TODO: Add reward, observation, agent info
+    def step(self, ctrl = None): # TODO: Add reward, observation, agent info
         info = {}
         done = False
         reward = 0
-
         
         
-        self.simulation.setEgoControl(ctrl)
+        if ctrl is not None:
+            self.simulation.setEgoControl(ctrl)
+        else:
+            self.simulation.setEgoControl(self.agent.run_step())
+        
         self.simulation.run_one_step()
-
-        obs = self.simulation.getEgoImage()
         
+        
+        
+        
+        obs = self.simulation.getEgoImage()
+        depth_image = self.simulation.getDepthImage()
+    
+        # Get object detection
+    
+        pred = self.model(obs, verbose=False, classes = [1, 2, 3, 5, 7], conf=.7)
+        pred_np = pred.cpu().numpy()
+        
+        # Update object list
+        
+        self.obj_list = create_obj_list(self.simulation, pred_np.boxes, depth_image) if len(pred[0].boxes) > 0 else []
+        self.agent.update_object_information(self.obj_list)
+        
+        
+        # Update rulebook
+        
+        self.rulebook.step()
+        
+        # Get ground truth bounding boxes
+        
+        
+        
+        
+            
+        
+
         
         return obs, reward, done, info
 
     def reset(self):
         self.simulation = self.simulator.simulate(scene = self.scene, timestep = self.timestep)
         obs = self.simulation.getEgoImage()
- 
+        self.agent = BehaviorAgent(self.simulation.ego, behavior='normal')
+        self.rulebook = RuleBook(self.simulation.ego)
+        self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
     
     
 
@@ -97,14 +136,12 @@ def main(): # Test the environment
     obs = env.reset()
     obs.save_to_disk('images/%.6d.jpg' % obs.frame)
     print("reset the environment")
-    for i in range(0):
+    for i in range(100):
         
 
-        if i % 20 == 0:
-            obs.save_to_disk('images/%.6d.jpg' % obs.frame)
+        obs.save_to_disk('images/%.6d.jpg' % obs.frame)
         
-        control = random_vehicle_control()
-        obs = env.step(control)
+        obs = env.step()
     
 
     env.close()
