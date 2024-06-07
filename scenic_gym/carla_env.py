@@ -8,6 +8,13 @@ from rulebook import RuleBook
 from agents.navigation.behavior_agent import BehaviorAgent
 from object_info import create_obj_list
 import torch
+from torchvision import transforms
+
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Example values
+])
+
 
 WIDTH = 1280
 HEIGHT = 720
@@ -69,7 +76,7 @@ class CarlaEnv(gym.Env):
     
         # Get object detection
     
-        pred = self.model(obs, verbose=False, classes = [1, 2, 3, 5, 7], conf=.7)
+        pred = self.model(transform(obs))
         pred_np = pred.cpu().numpy()
         
         # Update object list
@@ -95,7 +102,13 @@ class CarlaEnv(gym.Env):
 
     def reset(self):
         self.simulation = self.simulator.simulate(scene = self.scene, timestep = self.timestep)
+
+
         obs = self.simulation.getEgoImage()
+        #convert obs to numpy array
+        obs = transform(obs)
+
+        
         self.agent = BehaviorAgent(self.simulation.ego, behavior='normal')
         self.rulebook = RuleBook(self.simulation.ego)
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
@@ -132,7 +145,7 @@ def main(): # Test the environment
     scene, _ =  scenario.generate()
     
 
-    env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path, render = False)
+    env = CarlaEnv(scene = scene, carla_map = carla_map, map_path = map_path, render = True)
     
     obs = env.reset()
     obs.save_to_disk('images/%.6d.jpg' % obs.frame)
