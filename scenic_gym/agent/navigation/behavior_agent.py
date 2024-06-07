@@ -12,14 +12,14 @@ import sys
 
 import carla
 import numpy as np
-from agents.navigation.behavior_types import Aggressive
-from agents.navigation.behavior_types import Cautious
-from agents.navigation.behavior_types import Normal
-from agents.navigation.local_planner import RoadOption
-from agents.tools.misc import get_speed
-from agents.tools.misc import positive
+from agent.navigation.behavior_types import Aggressive
+from agent.navigation.behavior_types import Cautious
+from agent.navigation.behavior_types import Normal
+from agent.navigation.local_planner import RoadOption
+from agent.tools.misc import get_speed
+from agent.tools.misc import positive
 
-from agents.navigation.basic_agent import BasicAgent
+from agent.navigation.basic_agent import BasicAgent
 
 
 logger = logging.getLogger(__name__)
