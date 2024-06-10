@@ -166,9 +166,12 @@ def main(seed):  # Test the environment
     scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
     
     for j in range(3):
-    
-        random.seed(seed+j)
-        scene, _ = scenario.generate()
+        try:
+            random.seed(seed+j)
+            scene, _ = scenario.generate()
+        except Exception as e:
+            print(e)
+            continue
 
         env = CarlaEnv(scene=scene, carla_map=carla_map, map_path=map_path, render=True)
 
