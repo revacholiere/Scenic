@@ -164,20 +164,24 @@ def main(seed):  # Test the environment
     map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town01.xodr")
     carla_map = "Town01"
     scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
-    random.seed(seed)
-    scene, _ = scenario.generate()
+    
+    for j in range(3):
+    
+        random.seed(seed+j)
+        scene, _ = scenario.generate()
 
-    env = CarlaEnv(scene=scene, carla_map=carla_map, map_path=map_path, render=True)
+        env = CarlaEnv(scene=scene, carla_map=carla_map, map_path=map_path, render=True)
 
-    obs = env.reset()
+        obs = env.reset()
 
-    print("reset the environment")
-    for i in range(600):
-        # print(i)
-        obs, _, __, ___ = env.step()
-        obs.save_to_disk("autopilotvideo%d/%d_%.6d.jpg" % (seed, seed, obs.frame))
+        print("reset the environment")
 
-    env.close()
+        for i in range(10):
+            # print(i)
+            obs, _, __, ___ = env.step()
+            obs.save_to_disk("video%d/%d_%.6d.jpg" % (seed+j, seed+j, obs.frame))
+
+        env.close()
 
 
 main(3)
