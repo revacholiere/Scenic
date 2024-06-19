@@ -2,6 +2,7 @@ import gymnasium as gym
 import random
 import numpy as np
 import scenic
+from scenic.simulators.carla.simulator import CarlaSimulator
 import carla
 import random
 from rulebook import RuleBook
@@ -54,9 +55,9 @@ HEIGHT = 720
 class CarlaEnv(gym.Env):
     def __init__(
         self,
-        scene,
         carla_map,
         map_path,
+        scene = None,
         address="127.0.0.1",
         port=2000,
         timeout=10,
@@ -66,11 +67,11 @@ class CarlaEnv(gym.Env):
         traffic_manager_port=None,
     ):
         # self.observation_space = gym.spaces.Box(low=0, high=255, shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
-        self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        #self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.timestep = timestep
         self.simulation = None
         self.scene = scene
-        self.simulator = scenic.simulators.carla.simulator.CarlaSimulator(
+        self.simulator = CarlaSimulator(
             carla_map,
             map_path,
             address,
@@ -86,6 +87,12 @@ class CarlaEnv(gym.Env):
         self.rulebook = None
         self.model = None
         self.obj_list = []
+        
+        
+    def set_scene(self, scene):
+        self.scene = scene    
+        
+    
 
     def step(self, ctrl=None):  # TODO: Add reward, observation, agent info
         info = {}
@@ -130,9 +137,12 @@ class CarlaEnv(gym.Env):
         return obs, reward, done, info
 
     def reset(self):
+
         self.simulation = self.simulator.simulate(
             scene=self.scene, timestep=self.timestep
         )
+
+
 
         obs = self.simulation.getEgoImage()
         # convert obs to numpy array
@@ -140,16 +150,22 @@ class CarlaEnv(gym.Env):
         self.agent = BehaviorAgent(self.simulation.ego, behavior="normal")
         self.rulebook = RuleBook(self.simulation.ego)
         # self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
-        self.model = YOLO("./yolov5s.pt")
+        self.model = YOLO("./yolov5su.pt")
         self.agent.update_object_information(self.obj_list)
 
         return obs
 
-    def close(self):
+    def end_episode(self):
         self.simulation.destroy()
+        self.simulator.client.reload_world()
+
+
+
+    def close(self):
         self.simulator.destroy()
 
 
+        
 def random_vehicle_control():
     control = carla.VehicleControl()
     control.throttle = 1  # random throttle between 0 and 1
@@ -160,31 +176,40 @@ def random_vehicle_control():
     return control
 
 
-def main(seed):  # Test the environment
+def main(seed, num_episodes):  # Test the environment
     map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town01.xodr")
     carla_map = "Town01"
-    scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
+    env = CarlaEnv(carla_map=carla_map, map_path=map_path, render=True)
     
-    for j in range(3):
-        try:
-            random.seed(seed+j)
-            scene, _ = scenario.generate()
-        except Exception as e:
-            print(e)
-            continue
+    
+    #scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
+    
+    
+    
+    
+    for j in range(num_episodes):
+        scenario = scenic.scenarioFromFile(f"test1.scenic", mode2D=True)
+        random.seed(seed+j)
+        scene, _ = scenario.generate() 
+        
+        env.set_scene(scene)
 
-        env = CarlaEnv(scene=scene, carla_map=carla_map, map_path=map_path, render=True)
 
         obs = env.reset()
 
-        print("reset the environment")
+        
 
-        for i in range(10):
+        for i in range(100):
             # print(i)
             obs, _, __, ___ = env.step()
-            obs.save_to_disk("video%d/%d_%.6d.jpg" % (seed+j, seed+j, obs.frame))
+            
+            if i % 10 == 0: obs.save_to_disk("seed%d_video%d/%.6d.jpg" % (seed, j, obs.frame))
 
-        env.close()
+
+        print(f"end episode {j}")
+        env.end_episode()
+  
+    env.close()
 
 
-main(3)
+main(0, 3)
