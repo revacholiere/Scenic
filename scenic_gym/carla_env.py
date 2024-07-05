@@ -13,31 +13,10 @@ from torchvision import transforms
 from ultralytics import YOLO
 
 from behavior_agent import BehaviorAgent
+from PIL import ImageDraw, Image
 
-
-def image_to_array(image):
-    array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8")).reshape(
-        image.height, image.width, 4
-    )
-    array = array[:, :, :3]  # BGR
-    array = array[:, :, ::-1]  # RGB
-    return array
-
-
-def image_to_grayscale_depth_array(image):
-    array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8")).reshape(
-        image.height, image.width, 4
-    )
-    array = array.astype(np.float32)
-    array = array[:, :, :3]  # BGR
-
-    B, G, R = array[:, :, 0], array[:, :, 1], array[:, :, 2]
-
-    # Apply the formula to normalize the depth values
-    grayscale = ((R + G * 256 + B * 65536) / (16777215)) * 1000
-
-    return np.repeat(grayscale[:, :, np.newaxis], 3, axis=2)
-
+from utils import image_to_array, image_to_grayscale_depth_array, draw_boxes, get_ground_truth_bboxes
+from torchvision.utils import draw_bounding_boxes
 
 # WIDTH = 1280
 # HEIGHT = 720
@@ -189,6 +168,9 @@ def main(seed, num_episodes):  # Test the environment
 
             pred = model(obs_array, verbose=False, classes=[1, 2, 3, 5, 7], conf=0.7)
             pred_np = pred[0].cpu().numpy()
+            img = Image.fromarray(pred[0].plot())
+            bboxes = get_ground_truth_bboxes(env.simulation.world.get_actors().filter('*vehicle*'), env.getEgo(), env.simulation.ego_pov.sensor)
+            if len(bboxes) > 0 : draw_boxes(img, bboxes[:,1:][:,:4], (255, 0, 0, 100))
 
             obj_list = (
                 create_obj_list(env.simulation, pred_np.boxes, depth_array)
@@ -206,7 +188,8 @@ def main(seed, num_episodes):  # Test the environment
             obs, _, __, ___ = env.step(ctrl)
 
             if i % 10 == 0:
-                obs.save_to_disk("seed%d_video%d/%.6d.jpg" % (seed, j, obs.frame))
+                #img.save_to_disk("seed%d_video%d/%.6d.jpg" % (seed, j, obs.frame))
+                img.save("images/seed%d_video%d%.6d.jpg" % (seed, j, obs.frame))
 
         print(f"end episode {j}")
         env.end_episode()
@@ -214,4 +197,4 @@ def main(seed, num_episodes):  # Test the environment
     env.close()
 
 
-#main(0, 3)
+main(0, 1)
