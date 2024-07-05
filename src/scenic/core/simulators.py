@@ -235,7 +235,7 @@ class Simulator(abc.ABC):
         if verbosity >= 2:
             print(
                 f"  Simulation {name} ended successfully at time step "
-                f"{simulation.currentTime} because: {simulation.result.terminationReason}"
+                #f"{simulation.currentTime} because: {simulation.result.terminationReason}"
             )
         return simulation
 
@@ -331,6 +331,7 @@ class Simulation(abc.ABC):
         continueAfterDivergence=False,
         verbosity=0,
     ):
+
         self.result = None
         self.scene = scene
         self.objects = []
@@ -366,6 +367,7 @@ class Simulation(abc.ABC):
             dynamicScenario = self.scene.dynamicScenario
 
             # Create objects and perform simulator-specific initialization.
+
             self.setup()
 
             # Initialize the top-level dynamic scenario.
@@ -374,11 +376,11 @@ class Simulation(abc.ABC):
             # Update all objects in case the simulator has adjusted any dynamic
             # properties during setup.
             self.updateObjects()
-            print("Initialized simulation")
             # Run the simulation.
+            print("Initialized simulation")
         except Exception as e:
             print(e)
-            print("Could not initialize")
+            print("could not initialize")
             self.destroy()
             
             
@@ -409,23 +411,24 @@ class Simulation(abc.ABC):
             # This simulation will be thrown out, but attach it to the exception
             # to aid in debugging.
             e.simulation = self
-            raise
-        finally:
-            self.destroy()
-            for obj in self.objects:
-                disableDynamicProxyFor(obj)
-            for agent in self.agents:
-                if agent.behavior._isRunning:
-                    agent.behavior._stop()
-            # If the simulation was terminated by an exception (including rejections),
-            # some scenarios may still be running; we need to clean them up without
-            # checking their requirements, which could raise rejection exceptions.
-            for scenario in tuple(reversed(veneer.runningScenarios)):
-                scenario._stop("exception", quiet=True)
-            veneer.endSimulation(self)
+            raise'''
+    
             
+    def end_simulation(self):
+        import scenic.syntax.veneer as veneer
+
+        for obj in self.objects:
+            disableDynamicProxyFor(obj)
+        for agent in self.agents:
+            if agent.behavior._isRunning:
+                agent.behavior._stop()
+        # If the simulation was terminated by an exception (including rejections),
+        # some scenarios may still be running; we need to clean them up without
+        # checking their requirements, which could raise rejection exceptions.
+        for scenario in tuple(reversed(veneer.runningScenarios)):
+            scenario._stop("exception", quiet=True)
+        veneer.endSimulation(self)
             
-            '''
     def run_one_step(self):
         self.recordCurrentState()
         # Compute the actions of the agents in this time step
@@ -555,6 +558,7 @@ class Simulation(abc.ABC):
         for obj in self.scene.objects:
             self._createObject(obj)
 
+            
     def initializeReplay(self, replay, enableReplay, enableDivergenceCheck, allowPickle):
         if replay:
             self.replaying = True
@@ -836,6 +840,9 @@ class Simulation(abc.ABC):
         The default implementation does nothing by default; it may be overridden
         by subclasses.
         """
+        
+
+        
         pass
 
     def getReplay(self):

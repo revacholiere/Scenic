@@ -72,6 +72,7 @@ class CarlaSimulator(DrivingSimulator):
         self.record = record  # whether to use the carla recorder
         self.scenario_number = 0  # Number of the scenario executed
 
+
     def createSimulation(self, scene, *, timestep, **kwargs):
         if timestep is not None and timestep != self.timestep:
             raise RuntimeError(
@@ -121,6 +122,8 @@ class CarlaSimulation(DrivingSimulation):
 
 
     def setup(self):
+
+        
         weather = self.scene.params.get("weather")
         if weather is not None:
             if isinstance(weather, str):
@@ -129,17 +132,29 @@ class CarlaSimulation(DrivingSimulation):
                 self.world.set_weather(carla.WeatherParameters(**weather))
 
         # Setup HUD
-        if self.render:
-            self.displayDim = (1280, 720)
-            self.displayClock = pygame.time.Clock()
-            self.camTransform = 0
-            pygame.init()
-            pygame.font.init()
-            self.hud = visuals.HUD(*self.displayDim)
+        
+
+        
+        self.displayDim = (1280, 720)
+        self.displayClock = pygame.time.Clock()
+        self.camTransform = 0
+        pygame.init()
+        pygame.font.init()
+
+        self.hud = visuals.HUD(*self.displayDim)
+
+
+        if self.render and self.scenario_number == 1:
             self.display = pygame.display.set_mode(
                 self.displayDim, pygame.HWSURFACE | pygame.DOUBLEBUF
             )
-            self.cameraManager = None
+            
+        elif self.render and self.scenario_number > 1:
+            self.display = pygame.display.get_surface()
+        
+        self.cameraManager = None
+
+
 
         if self.record:
             if not os.path.exists(self.record):
@@ -364,4 +379,5 @@ class CarlaSimulation(DrivingSimulation):
         self.client.stop_recorder()
         
         self.world.tick()
+        self.end_simulation()
         super().destroy()
