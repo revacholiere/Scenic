@@ -1,13 +1,13 @@
 import logging
 
 import carla
-from agent.navigation.global_route_planner import GlobalRoutePlanner
-from agent.navigation.local_planner import LocalPlanner
-from agent.navigation.local_planner import RoadOption
-from agent.tools.misc import compute_distance
-from agent.tools.misc import get_speed
-from agent.tools.misc import get_trafficlight_trigger_location
-from agent.tools.misc import is_within_distance
+from agents.navigation.global_route_planner import GlobalRoutePlanner
+from agents.navigation.local_planner import LocalPlanner
+from agents.navigation.local_planner import RoadOption
+from agents.tools.misc import compute_distance
+from agents.tools.misc import get_speed
+from agents.tools.misc import get_trafficlight_trigger_location
+from agents.tools.misc import is_within_distance
 from shapely.geometry import Polygon
 
 

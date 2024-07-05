@@ -12,16 +12,7 @@ from object_info import create_obj_list
 from torchvision import transforms
 from ultralytics import YOLO
 
-from agent.navigation.behavior_agent import BehaviorAgent
-
-transform = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        ),  # Example values
-    ]
-)
+from behavior_agent import BehaviorAgent
 
 
 def image_to_array(image):
@@ -48,8 +39,8 @@ def image_to_grayscale_depth_array(image):
     return np.repeat(grayscale[:, :, np.newaxis], 3, axis=2)
 
 
-WIDTH = 1280
-HEIGHT = 720
+# WIDTH = 1280
+# HEIGHT = 720
 
 
 class CarlaEnv(gym.Env):
@@ -57,7 +48,7 @@ class CarlaEnv(gym.Env):
         self,
         carla_map,
         map_path,
-        scene = None,
+        scene=None,
         address="127.0.0.1",
         port=2000,
         timeout=10,
@@ -67,7 +58,7 @@ class CarlaEnv(gym.Env):
         traffic_manager_port=None,
     ):
         # self.observation_space = gym.spaces.Box(low=0, high=255, shape=(HEIGHT, WIDTH, 3), dtype=np.uint8)
-        #self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
+        # self.action_space = gym.spaces.Box(low=-1, high=1, shape=(3,), dtype=np.float32)
         self.timestep = timestep
         self.simulation = None
         self.scene = scene
@@ -87,12 +78,15 @@ class CarlaEnv(gym.Env):
         self.rulebook = None
         self.model = None
         self.obj_list = []
-        
-        
+
     def set_scene(self, scene):
-        self.scene = scene    
-        
-    
+        self.scene = scene
+
+    def getDepthImage(self):
+        return self.simulation.getDepthImage()
+
+    def getEgo(self):
+        return self.simulation.ego
 
     def step(self, ctrl=None):  # TODO: Add reward, observation, agent info
         info = {}
@@ -101,36 +95,37 @@ class CarlaEnv(gym.Env):
 
         if ctrl is not None:
             self.simulation.setEgoControl(ctrl)
-        else:
-            self.simulation.setEgoControl(self.agent.run_step())
 
         self.simulation.run_one_step()
 
         obs = self.simulation.getEgoImage()
-        obs_array = image_to_array(obs)
-        depth_image = self.simulation.getDepthImage()
-        depth_array = image_to_grayscale_depth_array(depth_image)
+        # obs_array = image_to_array(obs)
+        # depth_image = self.simulation.getDepthImage()
+        # depth_array = image_to_grayscale_depth_array(depth_image)
 
         # Get object detection
 
-        pred = self.model(obs_array, verbose=False, classes=[1, 2, 3, 5, 7], conf=0.7)
-        pred_np = pred[0].cpu().numpy()
+        # pred = self.model(obs_array, verbose=False, classes=[1, 2, 3, 5, 7], conf=0.7)
+        # pred_np = pred[0].cpu().numpy()
 
         # print(pred)
 
         # Update object list
-
+        """
         self.obj_list = (
             create_obj_list(self.simulation, pred_np.boxes, depth_array)
             if len(pred[0].boxes) > 0
             else []
         )
+        
+        """
+
         # print(dir(pred))
-        self.agent.update_object_information(self.obj_list)
+        # self.agent.update_object_information(self.obj_list)
 
         # Update rulebook
 
-        self.rulebook.step()
+        # self.rulebook.step()
 
         # Get ground truth bounding boxes
 
@@ -142,16 +137,12 @@ class CarlaEnv(gym.Env):
             scene=self.scene, timestep=self.timestep
         )
 
-
-
         obs = self.simulation.getEgoImage()
-        # convert obs to numpy array
 
-        self.agent = BehaviorAgent(self.simulation.ego, behavior="normal")
-        self.rulebook = RuleBook(self.simulation.ego)
-        # self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s')
-        self.model = YOLO("./yolov5su.pt")
-        self.agent.update_object_information(self.obj_list)
+        # self.agent = BehaviorAgent(self.simulation.ego, behavior="normal")
+        # self.rulebook = RuleBook(self.simulation.ego)
+        # self.model = YOLO("./yolov5su.pt")
+        # self.agent.update_object_information(self.obj_list)
 
         return obs
 
@@ -159,13 +150,10 @@ class CarlaEnv(gym.Env):
         self.simulation.destroy()
         self.simulator.client.reload_world()
 
-
-
     def close(self):
         self.simulator.destroy()
 
 
-        
 def random_vehicle_control():
     control = carla.VehicleControl()
     control.throttle = 1  # random throttle between 0 and 1
@@ -180,36 +168,54 @@ def main(seed, num_episodes):  # Test the environment
     map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town01.xodr")
     carla_map = "Town01"
     env = CarlaEnv(carla_map=carla_map, map_path=map_path, render=True)
-    
-    
-    #scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
-    
-    
-    
-    
+    model = YOLO("./yolov5su.pt")
+
+    # scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
+
     for j in range(num_episodes):
+
         scenario = scenic.scenarioFromFile(f"test1.scenic", mode2D=True)
-        random.seed(seed+j)
-        scene, _ = scenario.generate() 
-        
+        random.seed(seed + j)
+        scene, _ = scenario.generate()
         env.set_scene(scene)
-
-
         obs = env.reset()
 
-        
+        agent = BehaviorAgent(env.getEgo(), behavior="normal")
+        rulebook = RuleBook(env.getEgo())
+        obj_list = []
+        agent.update_object_information(obj_list)
 
-        for i in range(100):
-            # print(i)
-            obs, _, __, ___ = env.step()
-            
-            if i % 10 == 0: obs.save_to_disk("seed%d_video%d/%.6d.jpg" % (seed, j, obs.frame))
+        for i in range(100):  # number of timesteps
 
+            obs_array = image_to_array(obs)
+            depth_image = env.getDepthImage()
+            depth_array = image_to_grayscale_depth_array(depth_image)
+
+            pred = model(obs_array, verbose=False, classes=[1, 2, 3, 5, 7], conf=0.7)
+            pred_np = pred[0].cpu().numpy()
+
+            obj_list = (
+                create_obj_list(env.simulation, pred_np.boxes, depth_array)
+                if len(pred[0].boxes) > 0
+                else []
+            )
+
+            # print(pred)
+            agent.update_object_information(obj_list)
+
+            rulebook.step()
+
+            ctrl = agent.run_step()
+
+            obs, _, __, ___ = env.step(ctrl)
+
+            if i % 10 == 0:
+                obs.save_to_disk("seed%d_video%d/%.6d.jpg" % (seed, j, obs.frame))
 
         print(f"end episode {j}")
         env.end_episode()
-  
+
     env.close()
 
 
-main(0, 3)
+#main(0, 3)

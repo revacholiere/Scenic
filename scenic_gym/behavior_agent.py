@@ -12,14 +12,14 @@ import sys
 
 import carla
 import numpy as np
-from agent.navigation.behavior_types import Aggressive
-from agent.navigation.behavior_types import Cautious
-from agent.navigation.behavior_types import Normal
-from agent.navigation.local_planner import RoadOption
-from agent.tools.misc import get_speed
-from agent.tools.misc import positive
+from agents.navigation.behavior_types import Aggressive
+from agents.navigation.behavior_types import Cautious
+from agents.navigation.behavior_types import Normal
+from agents.navigation.local_planner import RoadOption
+from agents.tools.misc import get_speed
+from agents.tools.misc import positive
 
-from agent.navigation.basic_agent import BasicAgent
+from basic_agent import BasicAgent
 
 
 logger = logging.getLogger(__name__)
@@ -80,12 +80,8 @@ class BehaviorAgent(BasicAgent):
         elif behavior == "aggressive":
             self._behavior = Aggressive()
 
-
-
     def update_object_information(self, objects):
         self._objects = objects
-
-
 
     def _update_information(self):
         """
