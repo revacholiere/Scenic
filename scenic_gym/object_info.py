@@ -68,6 +68,7 @@ def create_obj_list(sim_manager, result_boxes, depth_array):
 
     bboxes_xyxy, classes = result_boxes.xyxy.tolist(), result_boxes.cls.tolist()
     depth_camera = sim_manager.depth_camera.sensor
+    #
     locations, bboxes_3d = compute_locations_and_bboxes_3d(depth_array, bboxes_xyxy, depth_camera)
     distances = [sim_manager.ego.get_location().distance(l) for l in locations]
     speeds = [0 if category==0 else 10 for category in classes]

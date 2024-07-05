@@ -74,10 +74,6 @@ class CarlaEnv(gym.Env):
             traffic_manager_port,
         )
 
-        self.agent = None
-        self.rulebook = None
-        self.model = None
-        self.obj_list = []
 
     def set_scene(self, scene):
         self.scene = scene
