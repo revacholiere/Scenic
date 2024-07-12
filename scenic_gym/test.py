@@ -18,8 +18,8 @@ from PIL import Image
 
 
 def main(seed, num_episodes, render=False):  # Test the environment
-    map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town01.xodr")
-    carla_map = "Town01"
+    map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town10HD.xodr")
+    carla_map = "Town10HD"
     env = CarlaEnv(carla_map=carla_map, map_path=map_path, render=False)
     model = YOLO("./yolov5su.pt")
 
@@ -30,11 +30,12 @@ def main(seed, num_episodes, render=False):  # Test the environment
             (1280, 720), pygame.HWSURFACE | pygame.DOUBLEBUF
         )
 
-    for j in range(num_episodes):
+    for j in range(1, num_episodes+1):
 
-        scenario = scenic.scenarioFromFile(f"test1.scenic", mode2D=True)
+        scenario = scenic.scenarioFromFile(f"Carla_Challenge/carlaChallenge{j}.scenic", mode2D=True)
         random.seed(seed + j)
-        scene, _ = scenario.generate()
+        try: scene, _ = scenario.generate()
+        except: continue #   scenic may fail to generate scenario
         env.set_scene(scene)
         obs = env.reset()
 
@@ -75,7 +76,7 @@ def main(seed, num_episodes, render=False):  # Test the environment
 
             obs, _, __, ___ = env.step(ctrl)
 
-            if i % 10 == 0:
+            if i % 1 == 0:
                 # img.save_to_disk("seed%d_video%d/%.6d.jpg" % (seed, j, obs.frame))
                 # img.save("images/seed%d_video%d%.6d.jpg" % (seed, j, obs.frame))
                 # print(type(env.simulation.ego_camera._surface))
@@ -95,4 +96,4 @@ def main(seed, num_episodes, render=False):  # Test the environment
     env.close()
 
 
-main(0, 1)
+main(1, 9, True)

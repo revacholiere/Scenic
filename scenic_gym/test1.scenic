@@ -7,7 +7,7 @@ model scenic.simulators.carla.model
 
 
 
-ego = new Car with behavior AutopilotBehavior()
+ego = new Car
 
 car2 = new Car visible from ego, with behavior AutopilotBehavior()
 car3 = new Car visible from ego, with behavior AutopilotBehavior()
