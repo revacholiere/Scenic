@@ -61,18 +61,18 @@ common:
   transform_normalize_mean: [0.485, 0.456, 0.406]
   transform_normalize_std: [0.229, 0.224, 0.225]
   rulebook:
-    - name: "pedestrian-collision"
-      type: "collision"
-      value: 1000
-      weight: 1
-      level: 0
-      actor: "*walker.pedestrian*"
-    - name: "vehicle-collision"
-      type: "collision"
-      value: 500
-      weight: 1
-      level: 0
-      actor: "*vehicle*"
+    # - name: "pedestrian-collision"
+    #   type: "collision"
+    #   value: 2000
+    #   weight: 1
+    #   level: 0
+    #   actor: "*walker.pedestrian*"
+    # - name: "vehicle-collision"
+    #   type: "collision"
+    #   value: 1000
+    #   weight: 1
+    #   level: 0
+    #   actor: "*vehicle*"
     - name: "pedestrian-proximity"
       type: "proximity"
       value: 200
@@ -84,11 +84,10 @@ common:
     - name: "vehicle-proximity"
       type: "proximity"
       value: 100
-      weight: 1
+      weight: 0.5
       level: 1
       actor: "*vehicle*"
-      min: 5
-      max: 45
+      min: 45
       angle: 45
     - name: "velocity"
       type: "velocity"
@@ -96,7 +95,7 @@ common:
       weight: 1
       level: 2
       min: 10
-      max: 90
+      max: 50
   vocabulary:
     start_token: "<start>"
     end_token: "<end>"

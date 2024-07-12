@@ -1,25 +1,27 @@
 import gymnasium as gym
-import random
-import numpy as np
-import scenic
+#import random
+#import numpy as np
+#import scenic
 from scenic.simulators.carla.simulator import CarlaSimulator
 import carla
-import random
-from rulebook import RuleBook
-import pygame
+#import random
+#from rulebook import RuleBook
+#import pygame
+
+
 
 #import copy
 
-from object_info import create_obj_list
+#from object_info import create_obj_list
 
-from torchvision import transforms
-from ultralytics import YOLO
+#from torchvision import transforms
+#from ultralytics import YOLO
 
-from behavior_agent import BehaviorAgent
-from PIL import ImageDraw, Image
+#from behavior_agent import BehaviorAgent
+#from PIL import ImageDraw, Image
 
-from utils import image_to_array, image_to_grayscale_depth_array, draw_boxes, get_ground_truth_bboxes, image_to_surface, pil_to_surface
-from torchvision.utils import draw_bounding_boxes
+#from utils import image_to_array, image_to_grayscale_depth_array, draw_boxes, get_ground_truth_bboxes, image_to_surface, pil_to_surface
+#from torchvision.utils import draw_bounding_boxes
 
 # WIDTH = 1280
 # HEIGHT = 720
@@ -141,7 +143,7 @@ def random_vehicle_control():
     control.reverse = 0  # random reverse status
     return control
 
-
+'''
 def main(seed, num_episodes, render = False):  # Test the environment
     map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town01.xodr")
     carla_map = "Town01"
@@ -223,4 +225,5 @@ def main(seed, num_episodes, render = False):  # Test the environment
     env.close()
 
 
-main(0, 1)
+#main(0, 1)
+'''
