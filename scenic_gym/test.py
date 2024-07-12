@@ -17,10 +17,10 @@ from utils import (
 from PIL import Image
 
 
-def main(seed, num_episodes, render=False):  # Test the environment
+def main(seed, num_episodes, scene_length, timestep, render=False):  # Test the environment
     map_path = scenic.syntax.veneer.localPath("~/Scenic/assets/maps/CARLA/Town10HD.xodr")
     carla_map = "Town10HD"
-    env = CarlaEnv(carla_map=carla_map, map_path=map_path, render=False)
+    env = CarlaEnv(carla_map=carla_map, map_path=map_path, render=False, timestep=timestep)
     model = YOLO("./yolov5su.pt")
 
     # scenario = scenic.scenarioFromFile("test.scenic", mode2D=True)
@@ -44,7 +44,7 @@ def main(seed, num_episodes, render=False):  # Test the environment
         obj_list = []
         agent.update_object_information(obj_list)
 
-        for i in range(100):  # number of timesteps
+        for i in range(int(scene_length/timestep)):  # number of timesteps
 
             obs_array = image_to_array(obs)
             depth_image = env.getDepthImage()
@@ -96,4 +96,4 @@ def main(seed, num_episodes, render=False):  # Test the environment
     env.close()
 
 
-main(1, 9, True)
+main(seed=1, num_episodes=9, scene_length=10, timestep=0.1, render=True)

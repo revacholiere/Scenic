@@ -127,7 +127,7 @@ class CarlaEnv(gym.Env):
 
     def end_episode(self):
         self.simulation.destroy()
-        self.simulator.client.reload_world()
+        #self.simulator.client.reload_world()
 
     def close(self):
         self.simulator.destroy()
