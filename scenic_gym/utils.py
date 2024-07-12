@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import ImageDraw, Image
+import pygame
 
 
 
@@ -154,3 +155,24 @@ def image_to_grayscale_depth_array(image):
     grayscale = ((R + G * 256 + B * 65536) / (16777215)) * 1000
 
     return np.repeat(grayscale[:, :, np.newaxis], 3, axis=2)
+
+
+
+
+
+
+
+def image_to_surface(image):
+    array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+    array = np.reshape(array, (image.height, image.width, 4))
+    array = array[:, :, :3]
+    array = array[:, :, ::-1]
+    return pygame.surfarray.make_surface(array.swapaxes(0, 1))
+
+
+def pil_to_surface(image):
+    array = np.asarray(image)
+    array = np.reshape(array, (image.height, image.width, 3))
+    #array = array[:, :, :]
+    #array = array[:, :, ::-1]
+    return pygame.surfarray.make_surface(array.swapaxes(0, 1))
