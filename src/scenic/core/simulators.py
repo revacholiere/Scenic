@@ -348,71 +348,74 @@ class Simulation(abc.ABC):
         self.initializeReplay(replay, enableReplay, enableDivergenceCheck, allowPickle)
         self.divergenceTolerance = divergenceTolerance
         self.continueAfterDivergence = continueAfterDivergence
-
+    
         # Do the actual setup and execution of the simulation inside a try-finally
         # statement so that we roll back global state even if an error occurs.
-        def initialize_simulation(self):
-            assert self.currentTime == 0
-            
-            try:
-                # Prepare global veneer state for running the simulation.
-                import scenic.syntax.veneer as veneer
+        self.initialize_simulation()
+        
+    def initialize_simulation(self):
+        assert self.currentTime == 0
+        
+        try:
+            # Prepare global veneer state for running the simulation.
+            import scenic.syntax.veneer as veneer
 
-                veneer.beginSimulation(self)
-                dynamicScenario = self.scene.dynamicScenario
+            veneer.beginSimulation(self)
+            dynamicScenario = self.scene.dynamicScenario
 
-                # Create objects and perform simulator-specific initialization.
-                self.setup()
+            # Create objects and perform simulator-specific initialization.
+            self.setup()
 
-                # Initialize the top-level dynamic scenario.
-                dynamicScenario._start()
+            # Initialize the top-level dynamic scenario.
+            dynamicScenario._start()
 
-                # Update all objects in case the simulator has adjusted any dynamic
-                # properties during setup.
-                self.updateObjects()
+            # Update all objects in case the simulator has adjusted any dynamic
+            # properties during setup.
+            self.updateObjects()
+            print("Successfully initialized simulation")
+            # Run the simulation.
+            '''
+            terminationType, terminationReason = self._run(dynamicScenario, maxSteps)
 
-                # Run the simulation.
-                '''
-                terminationType, terminationReason = self._run(dynamicScenario, maxSteps)
+            # Stop all remaining scenarios.
+            # (and reject if some 'require eventually' condition was never satisfied)
+            for scenario in tuple(reversed(veneer.runningScenarios)):
+                scenario._stop("simulation terminated")
 
-                # Stop all remaining scenarios.
-                # (and reject if some 'require eventually' condition was never satisfied)
-                for scenario in tuple(reversed(veneer.runningScenarios)):
-                    scenario._stop("simulation terminated")
+            # Record finally-recorded values.
+            values = dynamicScenario._evaluateRecordedExprs(RequirementType.recordFinal)
+            for name, val in values.items():
+                self.records[name] = val
 
-                # Record finally-recorded values.
-                values = dynamicScenario._evaluateRecordedExprs(RequirementType.recordFinal)
-                for name, val in values.items():
-                    self.records[name] = val
-
-                # Package up simulation results into a compact object.
-                result = SimulationResult(
-                    self.trajectory,
-                    self.actionSequence,
-                    terminationType,
-                    terminationReason,
-                    self.records,
-                )
-                self.result = result
-                '''
-            except (RejectSimulationException, RejectionException, GuardViolation) as e:
-                # This simulation will be thrown out, but attach it to the exception
-                # to aid in debugging.
-                e.simulation = self
-                raise
-            finally:
-                self.destroy()
-                for obj in self.objects:
-                    disableDynamicProxyFor(obj)
-                for agent in self.agents:
-                    if agent.behavior and agent.behavior._isRunning:
-                        agent.behavior._stop()
-                # If the simulation was terminated by an exception (including rejections),
-                # some scenarios may still be running; we need to clean them up without
-                # checking their requirements, which could raise rejection exceptions.
-                for scenario in tuple(reversed(veneer.runningScenarios)):
-                    scenario._stop("exception", quiet=True)
-                veneer.endSimulation(self)
+            # Package up simulation results into a compact object.
+            result = SimulationResult(
+                self.trajectory,
+                self.actionSequence,
+                terminationType,
+                terminationReason,
+                self.records,
+            )
+            self.result = result
+            '''
+        except (RejectSimulationException, RejectionException, GuardViolation) as e:
+            print("Simulation failed")
+            # This simulation will be thrown out, but attach it to the exception
+            # to aid in debugging.
+            e.simulation = self
+            raise
+        finally:
+            self.destroy()
+            for obj in self.objects:
+                disableDynamicProxyFor(obj)
+            for agent in self.agents:
+                if agent.behavior and agent.behavior._isRunning:
+                    agent.behavior._stop()
+            # If the simulation was terminated by an exception (including rejections),
+            # some scenarios may still be running; we need to clean them up without
+            # checking their requirements, which could raise rejection exceptions.
+            for scenario in tuple(reversed(veneer.runningScenarios)):
+                scenario._stop("exception", quiet=True)
+            veneer.endSimulation(self)
 
 
     def end_simulation(self):
