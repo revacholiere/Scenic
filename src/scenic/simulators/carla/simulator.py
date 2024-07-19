@@ -80,6 +80,7 @@ class CarlaSimulator(DrivingSimulator):
             )
 
         self.scenario_number += 1
+        
         return CarlaSimulation(
             scene,
             self.client,
@@ -111,12 +112,13 @@ class CarlaSimulation(DrivingSimulation):
         self.record = record
         self.scenario_number = scenario_number
         self.cameraManager = None
-        self.ego_camera = None
-        self.ego = None
-
+        #self.ego_camera = None
+        #self.ego = None
         super().__init__(scene, **kwargs)
+        #print("after init", self.objects)
 
     def setup(self):
+
         weather = self.scene.params.get("weather")
         if weather is not None:
             if isinstance(weather, str):
@@ -152,11 +154,12 @@ class CarlaSimulation(DrivingSimulation):
         super().setup()
 
         # Set up camera manager and collision sensor for ego
+        self.ego = self.objects[0].carlaActor
         if self.render:
             camIndex = 0
             camPosIndex = 0
-            egoActor = self.objects[0].carlaActor
-            self.cameraManager = visuals.CameraManager(self.world, egoActor, self.hud)
+            
+            self.cameraManager = visuals.CameraManager(self.world, self.ego, self.hud)
             self.cameraManager._transform_index = camPosIndex
             self.cameraManager.set_sensor(camIndex)
             self.cameraManager.set_transform(self.camTransform)
@@ -164,11 +167,12 @@ class CarlaSimulation(DrivingSimulation):
         self.world.tick()  ## allowing manualgearshift to take effect    # TODO still need this?
         # Set up ego POV camera
         
-        self.ego = self.objects[0].carlaActor
+
         self.ego_camera = visuals.CameraManager(self.world, self.ego, self.hud)
         self.ego_camera.set_sensor(0)
         self.ego_camera.set_transform(1)
         
+
         self.world.tick()
         
         # Set up depth camera
@@ -176,6 +180,8 @@ class CarlaSimulation(DrivingSimulation):
         self.depth_camera.set_sensor(1)
         self.depth_camera.set_transform(1)
         
+        
+
         self.world.tick()
         
         
@@ -185,6 +191,7 @@ class CarlaSimulation(DrivingSimulation):
                     carla.VehicleControl(manual_gear_shift=False)
                 )
 
+
         self.world.tick()
 
         for obj in self.objects:
@@ -193,6 +200,10 @@ class CarlaSimulation(DrivingSimulation):
                     f"object {obj} cannot have a nonzero initial speed "
                     "(this is not yet possible in CARLA)"
                 )
+                
+        print("after objects", self.ego.is_alive)
+                
+   
 
     def createObjectInSimulator(self, obj):
         # Extract blueprint

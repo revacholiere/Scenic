@@ -39,11 +39,7 @@ def main(seed, num_episodes, scene_length, timestep, render=False, save=False): 
         except: continue #   scenic may fail to generate scenario
         env.set_scene(scene)
         obs = env.reset()
-        print(env.getEgo().is_alive)
-        try: agent = BehaviorAgent(env.getEgo(), behavior="normal")
-        except: 
-            print(env.getEgo().is_alive)
-            return
+        agent = BehaviorAgent(env.getEgo(), behavior="normal")
         rulebook = RuleBook(env.getEgo())
         obj_list = []
         agent.update_object_information(obj_list)

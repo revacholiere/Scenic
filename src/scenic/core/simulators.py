@@ -251,7 +251,10 @@ class Simulator(abc.ABC):
             This method is now called with all the arguments to `simulate` except for
             **maxIterations**; these should be passed through as described above.
         """
+
         return Simulation(scene, **kwargs)
+
+
 
     def destroy(self):
         """Clean up as needed when shutting down the simulator interface.
@@ -352,6 +355,7 @@ class Simulation(abc.ABC):
         # Do the actual setup and execution of the simulation inside a try-finally
         # statement so that we roll back global state even if an error occurs.
         self.initialize_simulation()
+        #print(self.objects)
         
     def initialize_simulation(self):
         assert self.currentTime == 0
@@ -371,7 +375,11 @@ class Simulation(abc.ABC):
 
             # Update all objects in case the simulator has adjusted any dynamic
             # properties during setup.
+            #print(self.objects[0].carlaActor)
+            #print(self.objects)
             self.updateObjects()
+            #print(self.objects[0].carlaActor)
+            #print(self.objects)
             print("Successfully initialized simulation")
             # Run the simulation.
             '''
@@ -403,6 +411,7 @@ class Simulation(abc.ABC):
             # to aid in debugging.
             e.simulation = self
             raise
+        '''
         finally:
             self.destroy()
             for obj in self.objects:
@@ -416,7 +425,7 @@ class Simulation(abc.ABC):
             for scenario in tuple(reversed(veneer.runningScenarios)):
                 scenario._stop("exception", quiet=True)
             veneer.endSimulation(self)
-
+        '''
 
     def end_simulation(self):
             import scenic.syntax.veneer as veneer
