@@ -111,6 +111,8 @@ class CarlaSimulation(DrivingSimulation):
         self.record = record
         self.scenario_number = scenario_number
         self.cameraManager = None
+        self.ego_camera = None
+        self.ego = None
 
         super().__init__(scene, **kwargs)
 
@@ -123,17 +125,20 @@ class CarlaSimulation(DrivingSimulation):
                 self.world.set_weather(carla.WeatherParameters(**weather))
 
         # Setup HUD
-        if self.render:
-            self.displayDim = (1280, 720)
-            self.displayClock = pygame.time.Clock()
-            self.camTransform = 0
-            pygame.init()
-            pygame.font.init()
-            self.hud = visuals.HUD(*self.displayDim)
+
+        self.displayDim = (1280, 720)
+        self.displayClock = pygame.time.Clock()
+        self.camTransform = 0
+        pygame.init()
+        pygame.font.init()
+        self.hud = visuals.HUD(*self.displayDim)
+        if self.render and self.scenario_number == 1: 
             self.display = pygame.display.set_mode(
-                self.displayDim, pygame.HWSURFACE | pygame.DOUBLEBUF
-            )
-            self.cameraManager = None
+            self.displayDim, pygame.HWSURFACE | pygame.DOUBLEBUF
+        )
+        elif self.render and self.scenario_number > 1:
+            self.display = pygame.display.get_surface()
+        self.cameraManager = None
 
         if self.record:
             if not os.path.exists(self.record):
@@ -157,7 +162,23 @@ class CarlaSimulation(DrivingSimulation):
             self.cameraManager.set_transform(self.camTransform)
 
         self.world.tick()  ## allowing manualgearshift to take effect    # TODO still need this?
-
+        # Set up ego POV camera
+        
+        self.ego = self.objects[0].carlaActor
+        self.ego_camera = visuals.CameraManager(self.world, self.ego, self.hud)
+        self.ego_camera.set_sensor(0)
+        self.ego_camera.set_transform(1)
+        
+        self.world.tick()
+        
+        # Set up depth camera
+        self.depth_camera = visuals.CameraManager(self.world, self.ego, self.hud)
+        self.depth_camera.set_sensor(1)
+        self.depth_camera.set_transform(1)
+        
+        self.world.tick()
+        
+        
         for obj in self.objects:
             if isinstance(obj.carlaActor, carla.Vehicle):
                 obj.carlaActor.apply_control(
@@ -260,6 +281,16 @@ class CarlaSimulation(DrivingSimulation):
                 obj.carlaActor.apply_control(ctrl)
                 obj._control = None
 
+    def getDepthImage(self):
+        return self.depth_camera.images[-1]
+    
+    def getEgoImage(self):        
+        return self.ego_camera.images[-1]
+
+    def setEgoControl(self, ctrl):
+        if not self.objects[0].behavior:
+            self.ego.apply_control(ctrl)
+
     def step(self):
         # Run simulation for one timestep
         self.world.tick()
@@ -312,8 +343,13 @@ class CarlaSimulation(DrivingSimulation):
                 obj.carlaActor.destroy()
         if self.render and self.cameraManager:
             self.cameraManager.destroy_sensor()
-
+        if self.ego_camera:
+            self.ego_camera.destroy_sensor()
+        if self.depth_camera:
+            self.depth_camera.destroy_sensor()
+            
         self.client.stop_recorder()
 
         self.world.tick()
+        self.end_simulation()
         super().destroy()
