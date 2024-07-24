@@ -1,4 +1,4 @@
-from carla_env import CarlaEnv
+from scenic.gym.env import CarlaEnv
 from ultralytics import YOLO
 import pygame
 import random
