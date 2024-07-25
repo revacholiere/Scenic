@@ -2,7 +2,7 @@ import logging
 
 import colorlog
 
-from praeception.config.config import cfg
+from config import cfg
 
 
 SUPPRESS = logging.CRITICAL + 1

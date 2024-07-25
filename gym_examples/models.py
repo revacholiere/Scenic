@@ -5,8 +5,9 @@ import torch.nn as nn
 import torchvision.models as models
 import torchvision.transforms as transforms
 from torchvision.models import VisionTransformer
-
+from torch.functional import F
 from config import cfg
+import torch.distributions as dist
 
 
 logger = logging.getLogger(__name__)
@@ -207,34 +208,193 @@ def get_train_transform():
             ),
         ]
     )
+def calculate_iou(bbox1, bbox2):
+    # Calculate intersection coordinates
+    x_left = max(bbox1[0], bbox2[0])
+    y_top = max(bbox1[2], bbox2[2])
+    x_right = min(bbox1[1], bbox2[1])
+    y_bottom = min(bbox1[3], bbox2[3])
+    
+    if x_right < x_left or y_bottom < y_top:
+        return 0.0  # No overlap
+    
+    # Calculate intersection area
+    intersection_area = (x_right - x_left) * (y_bottom - y_top)
+    
+    # Calculate areas of both bounding boxes
+    bbox1_area = (bbox1[1] - bbox1[0]) * (bbox1[3] - bbox1[2])
+    bbox2_area = (bbox2[1] - bbox2[0]) * (bbox2[3] - bbox2[2])
+    
+    # Calculate union area
+    union_area = bbox1_area + bbox2_area - intersection_area
 
+    # Calculate IoU
+    if union_area != 0:
+        iou = intersection_area / union_area
+    else:
+        iou = 0
+    return iou
 
-def predict_detections(model, device, image, vocabulary):
+def compute_recall(bboxes, bboxes_gt, labels,labels_gt,iou_threshold=0.5):
+    true_positives = 0
+    false_negatives = 0
+    recall = 0
+    for bbox,label in zip(bboxes,labels):
+        bbox_is_tp = False
+        for bbox_gt,label_gt in zip(bboxes_gt,labels_gt):
+            vehicle_list = ['motorcycle','truck','bicycle','bus','car']
+            if label in vehicle_list:
+                label = 'car'
+            if label != label_gt:
+                continue  # Labels don't match, skip
+            iou = calculate_iou(bbox, bbox_gt)
+            # print(f'iou is {iou}, bbox is {label} {bbox}, bbox gt is {label_gt} {bbox_gt}')
+            if iou >= iou_threshold:
+                bbox_is_tp = True
+                break
+        if label in ['car','person']:
+            if bbox_is_tp:
+                true_positives += 1
+            else:
+                false_negatives += 1
+    if true_positives + false_negatives == 0:
+        recall = 0
+    else:
+        recall = true_positives / (true_positives + false_negatives)
+
+    return recall
+
+def compute_matchness(bboxes, bboxes_gt, labels,labels_gt,iou_threshold=0.5):
+    reward = []
+    for bbox,label in zip(bboxes,labels):
+        bbox_is_tp = False
+        for bbox_gt,label_gt in zip(bboxes_gt,labels_gt):
+            vehicle_list = ['motorcycle','truck','bicycle','bus','car']
+            if label in vehicle_list:
+                label = 'car'
+            if label != label_gt:
+                continue  # Labels don't match, skip
+            iou = calculate_iou(bbox, bbox_gt)
+            if iou >= iou_threshold:
+                bbox_is_tp = True
+                break
+        if bbox_is_tp:
+            reward.append(1)
+        else:
+            reward.append(-1)
+    return reward
+
+def bbox_resize_xxyy(bbox):
+    xmin = bbox[0,0]
+    ymin = bbox[0,1]
+    xmax = bbox[1,0]
+    ymax = bbox[1,1]
+    width_ratio = cfg.carla.ego_camera.image_width / cfg.common.img_width_resize
+    height_ratio = cfg.carla.ego_camera.image_height / cfg.common.img_height_resize
+    xmin_resize = xmin / width_ratio
+    ymin_resize = ymin / height_ratio
+    xmax_resize = xmax / width_ratio
+    ymax_resize = ymax / height_ratio
+    xmin_resize = max(1, xmin_resize)
+    ymin_resize = max(1, ymin_resize)
+    xmax_resize = min(cfg.common.img_width_resize, xmax_resize)
+    ymax_resize = min(cfg.common.img_height_resize, ymax_resize)
+
+    return [int(xmin_resize),int(xmax_resize),int(ymin_resize),int(ymax_resize)]
+
+def predict_detections(model, device, image, vocabulary, sample=False):
     with torch.no_grad():
         encoder_output = model.encoder(image)
-        start_token = torch.tensor(
-            [vocabulary.get_index_from_word(vocabulary.start_token)]
-        ).view(
-            1, 1
-        )  # Index of the start token in your vocabulary
-        current_token = start_token
-        generated_caption = [vocabulary.get_index_from_word(vocabulary.start_token)]
-        for _ in range(cfg.common.max_caption_length):
+        # start_token = torch.tensor(
+        #     [vocabulary.get_index_from_word(vocabulary.start_token)]
+        # ).view(
+        #     1, 1
+        # )  # Index of the start token in your vocabulary
+        maxWH = max(cfg.common.img_width_resize,cfg.common.img_height_resize)
+        # current_token = start_token
+        # generated_caption = [vocabulary.get_index_from_word(vocabulary.start_token)]
+
+        ar_outputs = [vocabulary.get_index_from_word(vocabulary.start_token)]
+
+        ar_outputs = torch.tensor(ar_outputs)
+        ar_outputs = ar_outputs.unsqueeze(1)
+        ar_outputs = ar_outputs.to(device)
+
+        for i in range(cfg.common.max_caption_length):
             # Pass the entire generated caption to the decoder
-            current_token = current_token.to(device)
-            decoder_output = model.decoder(encoder_output, current_token)
-            next_token = decoder_output.argmax(dim=2)[
-                -1
-            ]  # Select the token with the highest probability
-            if next_token[-1].item() == vocabulary.get_index_from_word(
-                vocabulary.end_token
-            ):  # Index of the end token in your vocabulary
-                break
-            generated_caption.append(next_token[-1].item())
+            # current_token = current_token.to(device)
+            # decoder_output = model.decoder(encoder_output, current_token)
+            decoder_output = model.decoder(encoder_output, ar_outputs)
+            prob = F.softmax(decoder_output, dim=-1)
+
+            probs = prob
+            if i % 5 == 0:
+                indices_to_mask = [0,1,3] + list(range(4,84))
+                probs[:,:,indices_to_mask] = 0
+                probs_flat = probs.view(-1, probs.size(-1))
+                sampled_indices_flat = torch.multinomial(probs_flat, num_samples=1)
+                sampled_indices = sampled_indices_flat.view(probs.size()[:-1])
+                if sampled_indices[:,-1].item() == 2:
+                    break
+                # logger.info(sampled_indices[:,-1])
+                # logger.info(sampled_indices[:,-1].shape)
+                # logger.info(sampled_indices[:,-1].item())
+
+            if i % 5 == 2:
+                indices_to_mask = [0,1,2,3] + list(range(4,84))
+                probs[:,:,indices_to_mask] = 0
+                probs_flat = probs.view(-1, probs.size(-1))
+                sampled_indices_flat = torch.multinomial(probs_flat, num_samples=1)
+                sampled_indices = sampled_indices_flat.view(probs.size()[:-1])
+            
+            if i % 5 == 1 or i % 5 == 3:
+                indices_to_mask = [0,1,2,3] + list(range(4,84)) 
+                probs[:,:,indices_to_mask] = 0
+                indices_to_mask = ar_outputs[:,-1]
+
+                mask = torch.ones_like(probs)
+                for j in range(len(indices_to_mask)):
+                    mask[:, :, j][mask[:, :, j] <= indices_to_mask[j]] = 0
+                probs = probs * mask
+                probs_flat = probs.view(-1, probs.size(-1))
+                sampled_indices_flat = torch.multinomial(probs_flat, num_samples=1)
+                sampled_indices = sampled_indices_flat.view(probs.size()[:-1])
+
+            if i % 5 == 4:
+                indices_to_mask = [0,1,2,3] + list(range(84,84+maxWH))
+                probs[:,:,indices_to_mask] = 0
+                probs_flat = probs.view(-1, probs.size(-1))
+                sampled_indices_flat = torch.multinomial(probs_flat, num_samples=1)
+                sampled_indices = sampled_indices_flat.view(probs.size()[:-1])
+            ar_outputs = torch.cat((ar_outputs,sampled_indices[:,-1].unsqueeze(1)),dim=1)
+            # sorted_prob,indices = torch.sort(prob,dim=2,descending=True)
+            # # logger.info(f"sorted_prob shape is{sorted_prob.shape}, indices shape is {indices.shape}")
+            # prob_last,index_last = sorted_prob[:,-1,:],indices[:,-1,:]
+            # index_dist = dist.Categorical(prob_last)
+            # sample_index = index_dist.sample()
+            # next_token = decoder_output.argmax(dim=2)[
+            #     -1
+            # ]  # Select the token with the highest probability
+            # logger.info(f"sampled avlue is {index_last[0,sample_index].item()}")
+            # logger.info(f"highest token is {index_last[0,0].item()}")
+            # logger.info(f"next token is {next_token}")
+            # if index_last[0,sample_index].item() == vocabulary.get_index_from_word(
+            #     vocabulary.end_token
+            # ):
+            #     break
+            # generated_caption.append(index_last[0,sample_index].item())
+            # if next_token[-1].item() == vocabulary.get_index_from_word(
+            #     vocabulary.end_token
+            # ):  # Index of the end token in your vocabulary
+            #     break
+            # generated_caption.append(next_token[-1].item())
 
             # Update the current token to include the newly generated token
-            current_token = torch.tensor(generated_caption).view(1, -1)
+            # current_token = torch.tensor(generated_caption).view(1, -1)
+        generated_caption = ar_outputs.reshape(ar_outputs.shape[1],).tolist()
     # Convert the generated caption to words
+    # logger.info(generated_caption)
+    # logger.info(ar_outputs)
     generated_caption_words = [
         vocabulary.get_word_from_index(idx) for idx in generated_caption
     ]
@@ -242,7 +402,32 @@ def predict_detections(model, device, image, vocabulary):
     return (
         convert_tokens_to_detections(generated_caption_words, vocabulary),
         generated_caption_words,
+        generated_caption,
     )
+
+def get_bboxes_and_labels(indices,idx_to_word):
+    bboxes_str =[idx_to_word[index] for index in indices]
+    bboxes = []
+    labels = []
+    num_obj = int((len(bboxes_str))/5)
+    for j in range(num_obj):
+        bbox = []
+        if bboxes_str[j*5] == '<end>':
+            break
+        
+        if bboxes_str[j*5].isdigit() and bboxes_str[j*5+1].isdigit() and bboxes_str[j*5+2].isdigit() and bboxes_str[j*5+3].isdigit():
+            bbox.append(int(bboxes_str[j*5]))
+            bbox.append(int(bboxes_str[j*5+1]))
+            bbox.append(int(bboxes_str[j*5+2]))
+            bbox.append(int(bboxes_str[j*5+3]))
+        else:
+            continue
+        label = bboxes_str[j*5+4]
+        if bbox[0] > bbox[1] or bbox[2] > bbox[3]:
+            continue
+        bboxes.append(bbox)
+        labels.append(label)
+    return bboxes,labels
 
 
 def convert_bbox_xywh_xyxy(bbox):
@@ -337,10 +522,31 @@ def convert_tokens_to_detections(tokens, vocabulary):
 
 def convert_detections_to_tokens(bboxes_xyxy, categories, confidences, vocabulary):
     # confidences are ignored for now
+
     tokens = []
     for bbox_xyxy, category_label in zip(bboxes_xyxy, categories):
-        bbox_xxyy = convert_bbox_xyxy_xxyy(bbox_xyxy)
-        tokens += [str(val) for val in bbox_xxyy]
+        bbox_xyxy_int = list(map(int, bbox_xyxy))
+        # filter the inconsistent box
+        if bbox_xyxy_int[0] > bbox_xyxy_int[2] or bbox_xyxy_int[1] > bbox_xyxy_int[3]:
+            continue
+        if bbox_xyxy_int[0] > cfg.common.img_width_resize:
+            continue
+        if bbox_xyxy_int[1] > cfg.common.img_height_resize:
+            continue
+        if bbox_xyxy_int[2] < 1:
+            continue
+        if bbox_xyxy_int[3] < 1:
+            continue            
+        if bbox_xyxy_int[0] < 1:
+            bbox_xyxy_int[0] = 1
+        if bbox_xyxy_int[1] < 1:
+            bbox_xyxy_int[1] = 1
+        if bbox_xyxy_int[2] > cfg.common.img_width_resize:
+            bbox_xyxy_int[2] = cfg.common.img_width_resize
+        if bbox_xyxy_int[3] > cfg.common.img_height_resize:
+            bbox_xyxy_int[3] = cfg.common.img_height_resize
+        # bbox_xxyy = convert_bbox_xyxy_xxyy(bbox_xyxy)
+        tokens += [str(val) for val in bbox_xyxy_int]
         tokens.append(str(category_label))
     tokens = [vocabulary.start_token] + tokens + [vocabulary.end_token]
     return tokens

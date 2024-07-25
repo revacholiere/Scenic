@@ -74,6 +74,9 @@ class Vocabulary:
 
     def get_index_from_word(self, word):
         return self._word_to_idx.get(word, self._word_to_idx[self._unknown_token])
+    
+    def get_idx_to_word(self):
+        return self._idx_to_word
 
     def __len__(self):
         return len(self._vocabulary)

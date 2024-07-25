@@ -9,7 +9,7 @@ from carla import ColorConverter as cc
 from PIL import Image
 from PIL import ImageFile
 
-from models.object_info import ObjectInfo
+from object_info import ObjectInfo
 
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -24,51 +24,51 @@ pil_logger.setLevel(SUPPRESS)
 
 path_templates = {
     "vehicle_state": Template(
-        "/results/${experiment_name}/vehicle/state/${sample_or_baseline}_${epoch}_${trajectory}.txt"
+        "/result/${experiment_name}/vehicle/state/${sample_or_baseline}_${epoch}_${trajectory}.txt"
     ),
     "vehicle_control": Template(
-        "/results/${experiment_name}/vehicle/control/${sample_or_baseline}_${epoch}_${trajectory}.txt"
+        "/result/${experiment_name}/vehicle/control/${sample_or_baseline}_${epoch}_${trajectory}.txt"
     ),
     "score": Template(
-        "/results/${experiment_name}/rewards/${sample_or_baseline}_${epoch}_${trajectory}.txt"
+        "/result/${experiment_name}/rewards/${sample_or_baseline}_${epoch}_${trajectory}.txt"
     ),
     "ego_image": Template(
-        "/results/${experiment_name}/images/ego/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
+        "/result/${experiment_name}/images/ego/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
     ),
     "birdseye_image": Template(
-        "/results/${experiment_name}/images/birdseye/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
+        "/result/${experiment_name}/images/birdseye/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
     ),
     "depth_image_raw": Template(
-        "/results/${experiment_name}/images/depth_raw/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
+        "/result/${experiment_name}/images/depth_raw/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
     ),
     "depth_image_log": Template(
-        "/results/${experiment_name}/images/depth_log/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
+        "/result/${experiment_name}/images/depth_log/${sample_or_baseline}_${epoch}_${trajectory}_${step}.png"
     ),
     "predicted_objects": Template(
-        "/results/${experiment_name}/predictions/objects/${sample_or_baseline}_${epoch}_${trajectory}_${step}.txt"
+        "/result/${experiment_name}/predictions/objects/${sample_or_baseline}_${epoch}_${trajectory}_${step}.txt"
     ),
     "predicted_captions": Template(
-        "/results/${experiment_name}/predictions/captions/${sample_or_baseline}_${epoch}_${trajectory}_${step}.txt"
+        "/result/${experiment_name}/predictions/captions/${sample_or_baseline}_${epoch}_${trajectory}_${step}.txt"
     ),
     "ground_truth_objects": Template(
-        "/results/${experiment_name}/ground_truth/objects/${sample_or_baseline}_${epoch}_${trajectory}_${step}.txt"
+        "/result/${experiment_name}/ground_truth/objects/${sample_or_baseline}_${epoch}_${trajectory}_${step}.txt"
     ),
     "ego_video": Template(
-        "/results/${experiment_name}/videos/ego/${sample_or_baseline}_${epoch}_${trajectory}.mp4"
+        "/result/${experiment_name}/videos/ego/${sample_or_baseline}_${epoch}_${trajectory}.mp4"
     ),
     "birdseye_video": Template(
-        "/results/${experiment_name}/videos/birdseye/${sample_or_baseline}_${epoch}_${trajectory}.mp4"
+        "/result/${experiment_name}/videos/birdseye/${sample_or_baseline}_${epoch}_${trajectory}.mp4"
     ),
     "percep_reward": Template(
-        "/results/${experiment_name}/percep_reward/${sample_or_baseline}_${epoch}_${trajectory}.txt"
+        "/result/${experiment_name}/percep_reward/${sample_or_baseline}_${epoch}_${trajectory}.txt"
     ),
     "percep_recall": Template(
-        "/results/${experiment_name}/percep_recall/${sample_or_baseline}_${epoch}_${trajectory}.txt"
+        "/result/${experiment_name}/percep_recall/${sample_or_baseline}_${epoch}_${trajectory}.txt"
     ),
     "rb_reward": Template(
-        "/results/${experiment_name}/rewards/${sample_or_baseline}_${epoch}_${trajectory}.txt"
+        "/result/${experiment_name}/rewards/${sample_or_baseline}_${epoch}_${trajectory}.txt"
     ),
-    "metrics": Template("/results/${experiment_name}/metrics/${epoch}.json"),
+    "metrics": Template("/result/${experiment_name}/metrics/${epoch}.json"),
 }
 
 
@@ -648,7 +648,7 @@ def load_vehicle_controls(epoch, trajectory, is_baseline=False):
 
 def save_checkpoint(model, epoch):
     checkpoint_path = os.path.join(
-        "/results",
+        "/result",
         cfg.experiment_name,
         "checkpoints",
         f"{epoch}.pth",
@@ -660,7 +660,7 @@ def save_checkpoint(model, epoch):
 
 def get_checkpoint_path(epoch):
     checkpoint_path = os.path.join(
-        "/results",
+        "/result",
         cfg.experiment_name,
         "checkpoints",
         f"{epoch}.pth",

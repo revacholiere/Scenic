@@ -1,6 +1,6 @@
 service: "check_no_carla"
 process_index: 0
-experiment_name: "default_experiment"
+experiment_name: "ekin_debug"
 log_level: "INFO"
 job_timeout_seconds: 300
 seed: 12345678

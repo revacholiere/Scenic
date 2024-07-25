@@ -38,4 +38,4 @@ class ConfigProxy:
         return OmegaConf.create(config)
 
 
-cfg = OmegaConf.load("/home/ekin/Scenic/scenic_gym/default_config.yaml")
+cfg = OmegaConf.load("/home/ekin/Scenic/gym_examples/default_config.yaml")
