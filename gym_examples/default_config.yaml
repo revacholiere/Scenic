@@ -2,9 +2,9 @@ service: "check_no_carla"
 process_index: 0
 experiment_name: "default_experiment"
 log_level: "INFO"
-job_timeout_seconds: 180
+job_timeout_seconds: 300
 seed: 12345678
-use_wandb: False
+use_wandb: True
 carla:
   num_replicas: 1
   host: "localhost"
@@ -12,8 +12,8 @@ carla:
   tm_port_offset: 5
   user: "user"
   timeout_secs: 200
-  fixed_delta_seconds: 0.5
-  max_substep_delta_time: 0.05
+  fixed_delta_seconds: 0.1
+  max_substep_delta_time: 0.01
   max_substeps: 10
   num_vehicles: 30
   num_pedestrians: 50
@@ -37,6 +37,17 @@ carla:
     image_width: 800
     image_height: 600
     tick: 0.05
+  lidar_camera:
+    name: "sensor.lidar.ray_cast_semantic"
+    tick: 0.05
+    channels: 64
+    points_per_second: 112000
+    upper_fov: 40
+    lower_fov: -40
+    range: 100
+    rotation_frequency: 20
+    x: 1
+    z: 2
   radar_camera:
     name: "sensor.other.radar"
     tick: 0
@@ -60,43 +71,149 @@ common:
   max_caption_length: 285
   transform_normalize_mean: [0.485, 0.456, 0.406]
   transform_normalize_std: [0.229, 0.224, 0.225]
+  exp_norm: True
+  rule_boxwise: True
+  iou_threshold: 0.5
+  rulebook_boxwise:
+    - name: "vehicle-collision"
+      type: "collision-boxwise"
+      value: 1000
+      weight: 1
+      level: 0
+      actor: "*vehicle*"
+    - name: "vehicle-rss"
+      type: "rss-boxwise"
+      value: 100
+      weight: 0.5
+      level: 2
+      actor: "*vehicle*"
+      min: 45
+      angle: 45
+      norm: 1000
+      a_brake_min: 2
+      a_brake_max: 4
+      a_max: 5
+      rho: 0.1
+    - name: "hard-brake"
+      type: "hard-brake-boxwise"
+      value: 100
+      weight: 0.5
+      level: 2
+      actor: "*"
+      min: 45
+      angle: 45
+      norm: 1000
+      a_brake_min: 10
+      a_brake_max: 3
+      a_max: 10
+      rho: 0.1
   rulebook:
-    - name: "pedestrian-collision"
+    # - name: "pedestrian-collision"
+    #   type: "collision"
+    #   value: 2000
+    #   weight: 1
+    #   level: 0
+    #   # 0
+    #   actor: "*walker.pedestrian*"
+    #   norm: 20000
+    - name: "vehicle-collision"
       type: "collision"
       value: 1000
       weight: 1
       level: 0
-      actor: "*walker.pedestrian*"
-    - name: "vehicle-collision"
-      type: "collision"
-      value: 500
-      weight: 1
-      level: 0
+      # 0
       actor: "*vehicle*"
-    - name: "pedestrian-proximity"
-      type: "proximity"
+      norm: 10000
+    - name: "distance"
+      type: "distance"
       value: 200
       weight: 1
       level: 1
       min: 10
       angle: 45
       actor: "*walker.pedestrian*"
-    - name: "vehicle-proximity"
-      type: "proximity"
+      norm: 2000
+    # - name: "vehicle-proximity"
+    #   type: "proximity"
+    #   value: 100
+    #   weight: 0.5
+    #   level: 1
+    #   actor: "*vehicle*"
+    #   min: 45
+    #   angle: 45
+    #   norm: 1000
+    - name: "vehicle-rss"
+      type: "rss"
       value: 100
-      weight: 1
-      level: 1
-      actor: "*vehicle*"
-      min: 5
-      max: 45
-      angle: 45
-    - name: "velocity"
-      type: "velocity"
-      value: 100
-      weight: 1
+      weight: 0.5
       level: 2
-      min: 10
-      max: 90
+      actor: "*vehicle*"
+      min: 45
+      angle: 45
+      norm: 1000
+      a_brake_min: 2
+      a_brake_max: 4
+      a_max: 5
+      rho: 0.1
+    # - name: "pedestrian-rss"
+    #   type: "rss"
+    #   value: 100
+    #   weight: 0.5
+    #   level: 2
+    #   actor: "*walker.pedestrian*"
+    #   min: 45
+    #   angle: 45
+    #   norm: 1000
+    #   a_brake_min: 10
+    #   a_brake_max: 3
+    #   a_max: 10
+    #   rho: 0.1
+    - name: "smooth-run"
+      type: "smooth"
+      value: 100
+      weight: 0.5
+      level: 2
+      actor: "*"
+      min: 45
+      angle: 45
+      norm: 1000
+      a_brake_min: 10
+      a_brake_max: 3
+      a_max: 10
+      rho: 0.1
+    - name: "hard_brake"
+      type: "hard_brake"
+      value: 100
+      weight: 0.5
+      level: 2
+      actor: "*"
+      min: 45
+      angle: 45
+      norm: 1000
+      a_brake_min: 10
+      a_brake_max: 3
+      a_max: 10
+      rho: 0.1
+
+    # - name: "pedestrian-proximity"
+    #   type: "proximity"
+    #   value: 200
+    #   weight: 1
+    #   level: 2
+    #   # 2
+    #   min: 10
+    #   angle: 45
+    #   actor: "*walker.pedestrian*"
+    #   norm: 2000
+    # - name: "velocity"
+    #   type: "velocity"
+    #   value: 100
+    #   weight: 1
+    #   level: 3
+    #   # 3
+    #   min: 20
+    #   max: 25
+    #   norm: 3000
   vocabulary:
     start_token: "<start>"
     end_token: "<end>"
@@ -105,6 +222,10 @@ common:
     vehicle_tokens: ["car", "truck", "bus"]
     pedestrian_tokens: ["person", "bicycle"]
     tokens:
+      # [
+      #   "person",
+      #   "car",
+      # ]
       [
         "person",
         "bicycle",
@@ -193,27 +314,83 @@ pretrain:
   learning_rate: 0.0001
   gamma: 0.95
   data:
-    root_path: "/data/coco/train2017"
-    annFile_path: "/data/coco/annotations/instances_train2017.json"
+    root_path: "/data/train/train2014"
+    annFile_path: "/data/annotations/instances_train2014.json"
     subset_num_images: 0
   model_save_path: "/models/detection_transfomer_384_full.pth"
-train:
-  num_epochs: 5
-  num_trajectories: 12
-  trajectory_length: 20
-  learning_rate: 0.00005
-  use_baseline: False
+
+test:
+  baseline_model_path: "/results/test/checkpoints/0.pth"
+  trained_model_path: "/results/test/checkpoints/9.pth"
+  num_epochs: 1
+  num_trajectories: 5
+  trajectory_length: 40
+  use_baseline: True
   use_captions: True
   use_semi_random_actor_generation: True
   jobs:
+    completion_check_interval_secs: 3 
+  json_path: "/models/vehicle_class_json_file.txt"
+train:
+  num_epochs: 20
+  num_trajectories: 12
+  trajectory_length: 120
+  use_baseline: True
+  use_captions: True
+  use_semi_random_actor_generation: True
+  algorithms:
+    pg_and_ce_online: False
+      # start_epoch: 0
+      # epoch_interval: 1
+      # batch_size: 10
+      # learning_rate: 0.00005
+    pg_recall: False
+      # start_epoch: 0
+      # epoch_interval: 1
+      # batch_size: 10
+      # learning_rate: 0.00005    
+    pg_rb_boxwise:
+      start_epoch: 0
+      epoch_interval: 1
+      batch_size: 10
+      learning_rate: 0.000001
+      rewards_w: 0.0
+    pg: False
+      # start_epoch: 0
+      # epoch_interval: 1
+      # batch_size: 10
+      # learning_rate: 0.000001
+      # rewards_w: 0.5
+    pg_and_ce: False
+      # start_epoch: 0
+      # epoch_interval: 0
+      # batch_size: 10
+      # learning_rate: 0.00005
+    ce_online: False
+      # start_epoch: 0
+      # epoch_interval: 1
+      # batch_size: 10
+      # learning_rate: 0.0001
+    ce_coco: False
+      # start_epoch: 0
+      # epoch_interval: 1
+      # batch_size: 24
+      # learning_rate: 0.0001
+      # iters: 128
+  jobs:
     completion_check_interval_secs: 3
+  # model_path: "/models/detection_transfomer_carla6000_384_full_epoch100.pth"
+  model_baseline_path: "/models/detection_transfomer_384_full.pth"
   model_path: "/models/detection_transfomer_384_full.pth"
+  json_path: "/models/vehicle_class_json_file.txt"
 evaluate:
   num_trajectories: 20
   trajectory_length: 600
   use_semi_random_actor_generation: True
   jobs:
     completion_check_interval_secs: 3
+  # sample_model_path: "/models/detection_transfomer_carla6000_384_full_epoch100.pth"
+  # baseline_model_path: "/models/detection_transfomer_carla6000_384_full_epoch100.pth"
   sample_model_path: "/models/detection_transfomer_384_full.pth"
   baseline_model_path: "/models/detection_transfomer_384_full.pth"
 analyze:

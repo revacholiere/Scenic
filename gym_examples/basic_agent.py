@@ -10,6 +10,8 @@ from agents.tools.misc import get_trafficlight_trigger_location
 from agents.tools.misc import is_within_distance
 from shapely.geometry import Polygon
 
+from object_info import ObjectInfo
+
 
 logger = logging.getLogger(__name__)
 

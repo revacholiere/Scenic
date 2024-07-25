@@ -1,5 +1,5 @@
-param map = localPath('../../Scenic/assets/maps/CARLA/Town10HD.xodr')
-param carla_map = 'Town10HD'
+param map = localPath('../../Scenic/assets/maps/CARLA/Town01.xodr')
+param carla_map = 'Town01'
 param time_step = 1.0/10
 
 

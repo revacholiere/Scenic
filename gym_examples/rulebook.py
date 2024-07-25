@@ -1,19 +1,21 @@
 import logging
 import math
+import queue
+import random
+import sys
+import time
 
+import carla
+import cv2
+import numpy as np
 from agents.tools.misc import get_speed
 from shapely.geometry import Polygon
 
-import yaml
+from config import cfg
 
-# Load the YAML file
-with open('default_config.yaml', 'r') as file:
-    config = yaml.safe_load(file)
-
-# logging.basicConfig(level=logging.DEBUG,
-#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
+
 
 class Rule:
     def __init__(
@@ -55,7 +57,7 @@ class RuleBook(object):
         self._rules = RuleBook._build_rules()
         for rule in self._rules:
             self._scores[rule.name] = []
-            # logger.debug(f"Rule {rule} added to rulebook")
+            logger.debug(f"Rule {rule} added to rulebook")
         self._scores["agg"] = []
 
     def _distance(self, actor):
@@ -63,24 +65,14 @@ class RuleBook(object):
 
     def _within_angle(self, actor, angle):
         forward = self._vehicle.get_transform().get_forward_vector()
-        # logger.debug(f"forward: {forward}")
+        logger.debug(f"forward: {forward}")
         actor_vector = actor.get_location() - self._vehicle.get_transform().location
         actor_vector = actor_vector / actor_vector.length()
-        # logger.debug(f"actor_vector: {actor_vector}")
+        logger.debug(f"actor_vector: {actor_vector}")
         dot = forward.dot(actor_vector)
         cos = math.cos(angle * math.pi / 180)
-        # logger.debug(f"dot: {dot}, cos: {cos}")
+        logger.debug(f"dot: {dot}, cos: {cos}")
         return dot > cos
-    
-    def _is_infront(self, actor):
-        forward = self._vehicle.get_transform().get_forward_vector()
-        # logger.debug(f"forward: {forward}")
-        actor_vector = actor.get_location() - self._vehicle.get_transform().location
-        actor_vector = actor_vector / actor_vector.length()
-        # logger.debug(f"actor_vector: {actor_vector}")
-        dot = forward.dot(actor_vector)
-        
-        return True if dot > 0 else False
 
     def _normalize(self, score):
         return 1 - math.exp(-score)
@@ -113,25 +105,16 @@ class RuleBook(object):
         agg_score = 0
         for rule in self._rules:
             if rule.type == "collision":
-                # score = self._normalize(self._collision_rule(rule))
-                score = math.log(self._collision_rule(rule)+1)
-
+                score = self._normalize(self._collision_rule(rule))
             elif rule.type == "proximity":
-                # score = self._normalize(self._proximity_rule(rule))
-                score = math.log(self._proximity_rule(rule)+1)
-                
+                score = self._normalize(self._proximity_rule(rule))
             elif rule.type == "velocity":
-                # score = self._normalize(self._velocity_rule(rule))
-                score = math.log(self._velocity_rule(rule)+1)
-
+                score = self._normalize(self._velocity_rule(rule))
             else:
                 logger.warning(f"Unknown rule type: {rule.type}")
             self._scores[rule.name].append(score)
-            # agg_score += 2 ** (1 - rule.level) * score * rule.weight
-            agg_score += score * rule.weight
-        
-        return agg_score
-        # self._scores["agg"].append(agg_score)
+            agg_score += 2 ** (1 - rule.level) * score * rule.weight
+        self._scores["agg"].append(agg_score)
 
     def _collision_rule(self, rule):
         score = 0
@@ -140,15 +123,12 @@ class RuleBook(object):
 
         current_velocity = self._velocity_log[-1]
         actor_list = self._world.get_actors().filter(rule.actor)
-        
         for actor in actor_list:
-
             if actor.id == self._vehicle.id:
                 continue
-            if self._detect_collision(actor) and self._is_infront(actor):
+            if self._detect_collision(actor):
                 logger.debug(f"Collision detected with {actor.id}")
                 score += score + rule.value * current_velocity
-                print(f'collision :(, collide with {actor.id}, violation collision score {score}')
         return score
 
     def _proximity_rule(self, rule):
@@ -164,11 +144,11 @@ class RuleBook(object):
         for actor in actor_list:
             if actor.id == self._vehicle.id:
                 continue
-            if self._distance(actor) > rule.max:
+            if self._distance(actor) < rule.min or self._distance(actor) > rule.max:
                 continue
-            if self._within_angle(actor, rule.angle):
+            if self._within_angle(actor, rule.angle) and acceleration < 0:
                 score += score + rule.value * current_velocity
-        # logger.debug(f"Proximity score[{rule.name}]: {score}")
+        logger.debug(f"Proximity score[{rule.name}]: {score}")
         return score
 
     def _velocity_rule(self, rule):
@@ -180,15 +160,11 @@ class RuleBook(object):
         previous_velocity = self._velocity_log[-2]
         acceleration = current_velocity - previous_velocity
 
-        # if current_velocity < rule.min:
-        #     score += score + rule.value * current_velocity
-        # elif current_velocity > rule.max:
-        #     score += score + rule.value * current_velocity
-        # # logger.debug(f"Velocity score[{rule.name}]: {score}")
-        if current_velocity > rule.max:
+        if current_velocity < rule.min:
             score += score + rule.value * current_velocity
-        # logger.debug(f"Velocity score[{rule.name}]: {score}")
-            
+        elif current_velocity > rule.max:
+            score += score + rule.value * current_velocity
+        logger.debug(f"Velocity score[{rule.name}]: {score}")
         return score
 
     def get_violation_scores(self):
@@ -208,14 +184,14 @@ class RuleBook(object):
     @classmethod
     def _build_rules(cls):
         rules = []
-        for rule in config['common']['rulebook']:
+        for rule in cfg.common.rulebook:
             rules.append(
                 Rule(
-                    name=rule['name'],
-                    type=rule['type'],
-                    value=float(rule['value']),
-                    weight=float(rule['weight']),
-                    level=int(rule['level']),
+                    name=rule.name,
+                    type=rule.type,
+                    value=float(rule.value),
+                    weight=float(rule.weight),
+                    level=int(rule.level),
                     actor=rule.get("actor", None),
                     min=float(rule.get("min", 0)),
                     max=float(rule.get("max", math.inf)),
