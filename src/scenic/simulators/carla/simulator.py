@@ -131,10 +131,10 @@ class CarlaSimulation(DrivingSimulation):
         self.displayDim = (1280, 720)
         self.displayClock = pygame.time.Clock()
         self.camTransform = 0
-        if self.render:
-            pygame.init()
-            pygame.font.init()
-            self.hud = visuals.HUD(*self.displayDim)
+
+        pygame.init()
+        pygame.font.init()
+        self.hud = visuals.HUD(*self.displayDim)
         if self.render and self.scenario_number == 1: 
             self.display = pygame.display.set_mode(
             self.displayDim, pygame.HWSURFACE | pygame.DOUBLEBUF
