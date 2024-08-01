@@ -156,9 +156,10 @@ class CarlaSimulation(DrivingSimulation):
 
         # Set up camera manager and collision sensor for ego
         self.ego = self.objects[0].carlaActor
+        camPosIndex = 0
         if self.render:
             camIndex = 0
-            camPosIndex = 0
+
             
             self.cameraManager = visuals.CameraManager(self.world, self.ego, self.hud)
             self.cameraManager._transform_index = camPosIndex
