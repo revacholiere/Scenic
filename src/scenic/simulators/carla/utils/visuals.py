@@ -272,6 +272,7 @@ class CameraManager(object):
         self._actor = actor
         self._hud = hud
         self.images = []
+        self.images_raw = []
         self._camera_transforms = [
             carla.Transform(carla.Location(x=-5.5, z=2.8), carla.Rotation(pitch=-15)),
             carla.Transform(carla.Location(x=1.6, z=1.7)),
@@ -345,6 +346,7 @@ class CameraManager(object):
         self = weak_self()
         if not self:
             return
+        self.images_raw.append(image)
         if self._sensors[self._index][0].startswith("sensor.lidar"):
             points = np.frombuffer(image.raw_data, dtype=np.dtype("f4"))
             points = np.reshape(points, (int(points.shape[0] / 3), 3))

@@ -170,6 +170,7 @@ class CarlaSimulation(DrivingSimulation):
         
 
         self.ego_camera = visuals.CameraManager(self.world, self.ego, self.hud)
+        self.ego_camera._transform_index = camPosIndex
         self.ego_camera.set_sensor(0)
         self.ego_camera.set_transform(1)
         
@@ -178,6 +179,7 @@ class CarlaSimulation(DrivingSimulation):
         
         # Set up depth camera
         self.depth_camera = visuals.CameraManager(self.world, self.ego, self.hud)
+        self.depth_camera._transform_index = camPosIndex
         self.depth_camera.set_sensor(1)
         self.depth_camera.set_transform(1)
         
@@ -298,6 +300,12 @@ class CarlaSimulation(DrivingSimulation):
     
     def getEgoImage(self):        
         return self.ego_camera.images[-1]
+
+    def getEgoImageRaw(self):
+        return self.ego_camera.images_raw[-1]
+    
+    def getDepthImageRaw(self):
+        return self.depth_camera.images_raw[-1]
 
     def setEgoControl(self, ctrl):
         if not self.objects[0].behavior:
