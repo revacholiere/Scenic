@@ -205,7 +205,6 @@ class CarlaSimulation(DrivingSimulation):
                     "(this is not yet possible in CARLA)"
                 )
                 
-        print("after objects", self.ego.is_alive)
                 
    
 
